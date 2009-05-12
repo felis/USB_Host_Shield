@@ -107,59 +107,52 @@ boolean MAX3421E::vbusPwr ( boolean action )
     }                      
     return( true );                                             // power on/off successful                       
 }
-///* probe bus to determine device presense and speed */
-//void MAX_busprobe( void )
-//{
-// BYTE bus_sample;
-//    
-////  MAXreg_wr(rHCTL,bmSAMPLEBUS); 
-//    bus_sample = MAXreg_rd( rHRSL );            //Get J,K status
-//    bus_sample &= ( bmJSTATUS|bmKSTATUS );      //zero the rest of the byte
-//
-//    switch( bus_sample ) {                          //start full-speed or low-speed host 
-//        case( bmJSTATUS ):
-//            /*kludgy*/
-//            if( usb_task_state != USB_ATTACHED_SUBSTATE_WAIT_RESET_COMPLETE ) { //bus reset causes connection detect interrupt
-//                if( !(MAXreg_rd( rMODE ) & bmLOWSPEED )) {
-//                    MAXreg_wr( rMODE, MODE_FS_HOST );           //start full-speed host
-//                }
-//                else {
-//                    MAXreg_wr( rMODE, MODE_LS_HOST);    //start low-speed host
-//                }
-//                usb_task_state = ( USB_STATE_ATTACHED );    //signal usb state machine to start attachment sequence
-//            }
-//            break;
-//        case( bmKSTATUS ):
-//            if( usb_task_state != USB_ATTACHED_SUBSTATE_WAIT_RESET_COMPLETE ) { //bus reset causes connection detect interrupt
-//                if( !(MAXreg_rd( rMODE ) & bmLOWSPEED )) {
-//                    MAXreg_wr( rMODE, MODE_LS_HOST );   //start low-speed host
-//                }
-//                else {
-//                    MAXreg_wr( rMODE, MODE_FS_HOST );               //start full-speed host
-//                }
-//                usb_task_state = ( USB_STATE_ATTACHED );    //signal usb state machine to start attachment sequence
-//            }
-//            break;
-//        case( bmSE1 ):              //illegal state
-//            usb_task_state = ( USB_DETACHED_SUBSTATE_ILLEGAL );
-//            break;
-//        case( bmSE0 ):              //disconnected state
+/* probe bus to determine device presense and speed */
+void MAX3421E::busprobe( void )
+{
+ byte bus_sample;
+    
+//  MAXreg_wr(rHCTL,bmSAMPLEBUS); 
+    bus_sample = regRd( rHRSL );            //Get J,K status
+    bus_sample &= ( bmJSTATUS|bmKSTATUS );      //zero the rest of the byte
+
+    switch( bus_sample ) {                          //start full-speed or low-speed host 
+        case( bmJSTATUS ):
+            if(( regRd( rMODE ) & bmLOWSPEED ) == 0 ) {
+                regWr( rMODE, MODE_FS_HOST );       //start full-speed host
+            }
+            else {
+                regWr( rMODE, MODE_LS_HOST);        //start low-speed host
+            }
+            break;
+        case( bmKSTATUS ):
+            if(( regRd( rMODE ) & bmLOWSPEED ) == 0 ) {
+                regWr( rMODE, MODE_LS_HOST );       //start low-speed host
+            }
+            else {
+                regWr( rMODE, MODE_FS_HOST );       //start full-speed host
+            }
+            break;
+        case( bmSE1 ):              //illegal state
+            // usb_task_state = ( USB_DETACHED_SUBSTATE_ILLEGAL );
+            break;
+        case( bmSE0 ):              //disconnected state
 //            if( !(( usb_task_state & USB_STATE_MASK ) == USB_STATE_DETACHED ))          //if we came here from other than detached state
 //                usb_task_state = ( USB_DETACHED_SUBSTATE_INITIALIZE );  //clear device data structures
 //            else {  
 //              MAXreg_wr( rMODE, MODE_FS_HOST ); //start full-speed host
 //              usb_task_state = ( USB_DETACHED_SUBSTATE_WAIT_FOR_DEVICE );
 //            }
-//            break;
-//        }//end switch( bus_sample )
-//}
+            break;
+        }//end switch( bus_sample )
+}
 /* MAX3421E initialization after power-on   */
 void MAX3421E::powerOn()
 {
     /* Configure full-duplex SPI, interrupt pulse   */
-    regWr( rPINCTL,( bmFDUPSPI + bmINTLEVEL + bmGPXB ));     //Full-duplex SPI, level interrupt, GPX
-    if( reset() == false ) {                            //stop/start the oscillator
-        Serial.println("Error: OSCOKIRQ not asserted");
+    regWr( rPINCTL,( bmFDUPSPI + bmINTLEVEL + bmGPXB ));    //Full-duplex SPI, level interrupt, GPX
+    if( reset() == false ) {                                //stop/start the oscillator
+        Serial.println("Error: OSCOKIRQ failed to assert");
     }
     /* configure power switch   */
     vbusPwr( OFF );                                         //turn Vbus power off
@@ -169,8 +162,8 @@ void MAX3421E::powerOn()
     }
 //    vbusPwr( ON );
     /* configure host operation */
-    regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ );      // set pull-downs, Host, Separate GPIN IRQ on GPX
-    regWr( rHIEN, bmCONDETIE );                                             //connection detection
+    regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ|bmSOFKAENAB );      // set pull-downs, Host, Separate GPIN IRQ on GPX
+    regWr( rHIEN, bmCONDETIE|bmFRAMEIE );                                             //connection detection
     regWr(rHCTL,bmSAMPLEBUS);                                               // update the JSTATUS and KSTATUS bits
     // MAX_busprobe();                                                             //check if anything is connected
     regWr( rHIRQ, bmCONDETIRQ );                                            //clear connection detect interrupt                 
@@ -179,10 +172,13 @@ void MAX3421E::powerOn()
 /* MAX3421 state change task and interrupt handler */
 void MAX3421E::Task( void )
 {
-    if( MAX_INT == 0 ) {
+ byte pinvalue;
+    pinvalue = digitalRead( MAX_INT );    
+    if( pinvalue  == LOW ) {
         IntHandler();
     }
-    if( MAX_GPX == 1 ) {
+    pinvalue = digitalRead( MAX_GPX );
+    if( pinvalue == LOW ) {
         GpxHandler();
     }   
 }   
@@ -190,24 +186,21 @@ void MAX3421E::IntHandler()
 {
  byte HIRQ;
  byte HIRQ_sendback = 0x00;
-        HIRQ = regRd( rHIRQ );                  //determine interrupt source
-//        if( HIRQ & bmFRAMEIRQ ) {                   //->1ms SOF interrupt handler
-//                    HIRQ_sendback |= bmFRAMEIRQ;
-//        }//end FRAMEIRQ handling
-        if( HIRQ & bmCONDETIRQ ) {
+    HIRQ = regRd( rHIRQ );                  //determine interrupt source
+    if( HIRQ & bmFRAMEIRQ ) {               //->1ms SOF interrupt handler
+        HIRQ_sendback |= bmFRAMEIRQ;
+    }//end FRAMEIRQ handling
+    if( HIRQ & bmCONDETIRQ ) {
 //            MAX_busprobe();
-            HIRQ_sendback |= bmCONDETIRQ;
-        }
-        //if ( HIRQ & bmBUSEVENTIRQ ) {               //bus event is either reset or suspend
-        //    usb_task_state++;                       //advance USB task state machine
-        //    HIRQ_sendback |= bmBUSEVENTIRQ; 
-        //}
-        /* End HIRQ interrupts handling, clear serviced IRQs    */
-        regWr( rHIRQ, HIRQ_sendback );
+        HIRQ_sendback |= bmCONDETIRQ;
+    }
+    /* End HIRQ interrupts handling, clear serviced IRQs    */
+    regWr( rHIRQ, HIRQ_sendback );
 }
 void MAX3421E::GpxHandler()
 {
  byte GPINIRQ;
 
-    GPINIRQ = regRd( rGPINIRQ );            //read both IRQ registers
+    GPINIRQ = regRd( rGPINIRQ );            //read GPIN IRQ register
+    regWr( rGPINIRQ, GPINIRQ );             //just clear for now
 }
