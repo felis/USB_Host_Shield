@@ -6,12 +6,16 @@
 #include <Spi.h>
 //#include <WProgram.h>
 #include "WProgram.h"
-#include <util/delay.h>
+// #include <util/delay.h>
 #include "Max3421e_constants.h"
 
 class MAX3421E : public SPI {
+    byte vbusState;
+
     public:
         MAX3421E( void );
+        void toggle( byte pin );
+        byte getVbusState( void );
         void regWr( byte, byte );
         char * bytesWr( byte, byte, char * );
         byte regRd( byte );
@@ -20,9 +24,9 @@ class MAX3421E : public SPI {
         boolean vbusPwr ( boolean );
         void busprobe( void );
         void powerOn();
-        void IntHandler();
-        void GpxHandler();
-        void Task();
+        byte IntHandler();
+        byte GpxHandler();
+        byte Task();
     private:
         void init(); 
 };

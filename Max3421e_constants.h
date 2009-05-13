@@ -9,13 +9,21 @@
 #define MAX_GPX   8
 #define MAX_RESET 7
 
+#define BPNT_0      3
+#define BPNT_1      2
+     
 #define Select_MAX3421E     digitalWrite(MAX_SS,LOW)
 #define Deselect_MAX3421E   digitalWrite(MAX_SS,HIGH)
 
 /* */
 
 #define ON  true
-#define OFF false    
+#define OFF false
+
+#define SE0     0
+#define SE1     1
+#define FSHOST  2
+#define LSHOST  3
 
 /* MAX3421E command byte format: rrrrr0wa where 'r' is register number  */
 //

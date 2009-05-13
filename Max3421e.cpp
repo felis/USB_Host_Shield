@@ -11,7 +11,7 @@ MAX3421E::MAX3421E()
 {
     Serial.begin( 9600 );
     init();
-    powerOn();
+    //powerOn();
 }
 /* initialization */
 void MAX3421E::init()
@@ -20,9 +20,22 @@ void MAX3421E::init()
     pinMode( MAX_INT, INPUT);
     pinMode( MAX_GPX, INPUT );
     pinMode( MAX_SS, OUTPUT );
+    pinMode( BPNT_0, OUTPUT );
+    pinMode( BPNT_1, OUTPUT );
+    digitalWrite( BPNT_0, LOW );
+    digitalWrite( BPNT_1, LOW );
     Deselect_MAX3421E;              
     pinMode( MAX_RESET, OUTPUT );
     digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
+}
+byte MAX3421E::getVbusState( void )
+{
+    return( vbusState );
+}
+void MAX3421E::toggle( byte pin )
+{
+    digitalWrite( pin, HIGH );
+    digitalWrite( pin, LOW );
 }
 /* Single host register write   */
 void MAX3421E::regWr( byte reg, byte val)
@@ -100,7 +113,7 @@ boolean MAX3421E::vbusPwr ( boolean action )
     }
     regWr( rIOPINS2, tmp );                 //send GPOUT7
     if( action ) {
-        _delay_ms( 60 );
+        delay( 60 );
     }
     if (( regRd( rIOPINS2 ) & bmGPIN7 ) == 0 ) {     // check if overload is present. MAX4793 /FLAG ( pin 4 ) goes low if overload
         return( false );
@@ -111,38 +124,34 @@ boolean MAX3421E::vbusPwr ( boolean action )
 void MAX3421E::busprobe( void )
 {
  byte bus_sample;
-    
-//  MAXreg_wr(rHCTL,bmSAMPLEBUS); 
     bus_sample = regRd( rHRSL );            //Get J,K status
     bus_sample &= ( bmJSTATUS|bmKSTATUS );      //zero the rest of the byte
-
     switch( bus_sample ) {                          //start full-speed or low-speed host 
         case( bmJSTATUS ):
             if(( regRd( rMODE ) & bmLOWSPEED ) == 0 ) {
                 regWr( rMODE, MODE_FS_HOST );       //start full-speed host
+                vbusState = FSHOST;
             }
             else {
                 regWr( rMODE, MODE_LS_HOST);        //start low-speed host
+                vbusState = LSHOST;
             }
             break;
         case( bmKSTATUS ):
             if(( regRd( rMODE ) & bmLOWSPEED ) == 0 ) {
                 regWr( rMODE, MODE_LS_HOST );       //start low-speed host
+                vbusState = LSHOST;
             }
             else {
                 regWr( rMODE, MODE_FS_HOST );       //start full-speed host
+                vbusState = FSHOST;
             }
             break;
         case( bmSE1 ):              //illegal state
-            // usb_task_state = ( USB_DETACHED_SUBSTATE_ILLEGAL );
+            vbusState = SE1;
             break;
         case( bmSE0 ):              //disconnected state
-//            if( !(( usb_task_state & USB_STATE_MASK ) == USB_STATE_DETACHED ))          //if we came here from other than detached state
-//                usb_task_state = ( USB_DETACHED_SUBSTATE_INITIALIZE );  //clear device data structures
-//            else {  
-//              MAXreg_wr( rMODE, MODE_FS_HOST ); //start full-speed host
-//              usb_task_state = ( USB_DETACHED_SUBSTATE_WAIT_FOR_DEVICE );
-//            }
+            vbusState = SE0;
             break;
         }//end switch( bus_sample )
 }
@@ -160,29 +169,31 @@ void MAX3421E::powerOn()
     if( vbusPwr( ON  ) == false ) {
         Serial.println("Error: Vbus overload");
     }
-//    vbusPwr( ON );
     /* configure host operation */
-    regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ|bmSOFKAENAB );      // set pull-downs, Host, Separate GPIN IRQ on GPX
+    regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ );      // set pull-downs, Host, Separate GPIN IRQ on GPX
     regWr( rHIEN, bmCONDETIE|bmFRAMEIE );                                             //connection detection
     regWr(rHCTL,bmSAMPLEBUS);                                               // update the JSTATUS and KSTATUS bits
-    // MAX_busprobe();                                                             //check if anything is connected
+    busprobe();                                                             //check if anything is connected
     regWr( rHIRQ, bmCONDETIRQ );                                            //clear connection detect interrupt                 
     regWr( rCPUCTL, 0x01 );                                                 //enable interrupt pin
 }
 /* MAX3421 state change task and interrupt handler */
-void MAX3421E::Task( void )
+byte MAX3421E::Task( void )
 {
+ byte rcode = 0;
  byte pinvalue;
+    toggle( BPNT_1 );
     pinvalue = digitalRead( MAX_INT );    
     if( pinvalue  == LOW ) {
-        IntHandler();
+        rcode = IntHandler();
     }
     pinvalue = digitalRead( MAX_GPX );
     if( pinvalue == LOW ) {
         GpxHandler();
-    }   
+    }
+    return( rcode );   
 }   
-void MAX3421E::IntHandler()
+byte MAX3421E::IntHandler()
 {
  byte HIRQ;
  byte HIRQ_sendback = 0x00;
@@ -191,16 +202,23 @@ void MAX3421E::IntHandler()
         HIRQ_sendback |= bmFRAMEIRQ;
     }//end FRAMEIRQ handling
     if( HIRQ & bmCONDETIRQ ) {
-//            MAX_busprobe();
+        busprobe();
         HIRQ_sendback |= bmCONDETIRQ;
     }
     /* End HIRQ interrupts handling, clear serviced IRQs    */
     regWr( rHIRQ, HIRQ_sendback );
+    return( HIRQ_sendback );
 }
-void MAX3421E::GpxHandler()
+byte MAX3421E::GpxHandler()
 {
- byte GPINIRQ;
-
-    GPINIRQ = regRd( rGPINIRQ );            //read GPIN IRQ register
-    regWr( rGPINIRQ, GPINIRQ );             //just clear for now
+ byte GPINIRQ = regRd( rGPINIRQ );          //read GPIN IRQ register
+    toggle( BPNT_0 );
+    if( GPINIRQ & bmGPINIRQ7 ) {            //vbus overload
+        vbusPwr( OFF );                     //attempt powercycle
+        delay( 100 );
+        vbusPwr( ON );
+        regWr( rGPINIRQ, bmGPINIRQ7 );
+    }       
+    //regWr( rGPINIRQ, GPINIRQ );             //clear
+    return( GPINIRQ );
 }
