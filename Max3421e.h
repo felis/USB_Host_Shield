@@ -6,16 +6,17 @@
 #include <Spi.h>
 //#include <WProgram.h>
 #include "WProgram.h"
-// #include <util/delay.h>
 #include "Max3421e_constants.h"
 
 class MAX3421E : public SPI {
-    byte vbusState;
+    // byte vbusState;
 
     public:
         MAX3421E( void );
-        void toggle( byte pin );
+        //byte getVbusState() { return( vbusState ); }
         byte getVbusState( void );
+        void toggle( byte pin );
+        // byte getVbusState( void );
         void regWr( byte, byte );
         char * bytesWr( byte, byte, char * );
         byte regRd( byte );

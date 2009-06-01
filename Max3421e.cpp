@@ -3,15 +3,20 @@
 #include "Max3421e.h"
 // #include "Max3421e_constants.h"
 
+static byte vbusState;
 
 /* Functions    */
 
 /* Constructor */
 MAX3421E::MAX3421E()
 {
-    Serial.begin( 9600 );
+    //Serial.begin( 9600 );
     init();
     //powerOn();
+}
+byte MAX3421E::getVbusState( void )
+{ 
+    return( vbusState );
 }
 /* initialization */
 void MAX3421E::init()
@@ -28,10 +33,10 @@ void MAX3421E::init()
     pinMode( MAX_RESET, OUTPUT );
     digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
 }
-byte MAX3421E::getVbusState( void )
-{
-    return( vbusState );
-}
+//byte MAX3421E::getVbusState( void )
+//{
+//    return( vbusState );
+//}
 void MAX3421E::toggle( byte pin )
 {
     digitalWrite( pin, HIGH );
@@ -182,7 +187,8 @@ byte MAX3421E::Task( void )
 {
  byte rcode = 0;
  byte pinvalue;
-    toggle( BPNT_1 );
+    //Serial.print("Vbus state: ");
+    //Serial.println( vbusState, HEX );
     pinvalue = digitalRead( MAX_INT );    
     if( pinvalue  == LOW ) {
         rcode = IntHandler();
@@ -191,6 +197,7 @@ byte MAX3421E::Task( void )
     if( pinvalue == LOW ) {
         GpxHandler();
     }
+//    usbSM();                                //USB state machine                            
     return( rcode );   
 }   
 byte MAX3421E::IntHandler()
@@ -212,13 +219,17 @@ byte MAX3421E::IntHandler()
 byte MAX3421E::GpxHandler()
 {
  byte GPINIRQ = regRd( rGPINIRQ );          //read GPIN IRQ register
-    toggle( BPNT_0 );
     if( GPINIRQ & bmGPINIRQ7 ) {            //vbus overload
         vbusPwr( OFF );                     //attempt powercycle
-        delay( 100 );
+        delay( 1000 );
         vbusPwr( ON );
         regWr( rGPINIRQ, bmGPINIRQ7 );
     }       
-    //regWr( rGPINIRQ, GPINIRQ );             //clear
     return( GPINIRQ );
 }
+
+//void MAX3421E::usbSM( void )                //USB state machine
+//{
+//    
+//
+//}
