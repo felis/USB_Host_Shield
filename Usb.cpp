@@ -37,6 +37,11 @@ EP_RECORD* USB::getDevTableEntry( byte addr, byte ep )
     ptr += ep;
     return( ptr );
 }
+/* set device table entry */
+void USB::setDevTableEntry( byte addr, EP_RECORD* eprecord_ptr )
+{
+
+}
 /* Control transfer. Sets address, endpoint, fills control packet with necessary data, dispatches control packet, and initiates bulk IN transfer,   */
 /* depending on request. Actual requests are defined as macros                                                                                      */
 /* return codes:                */
@@ -85,7 +90,10 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
     setup_pkt.wLength = nbytes;
     bytesWr( rSUDFIFO, 8, ( char *)&setup_pkt );    //transfer to setup packet FIFO
     rcode = dispatchPkt( tokSETUP, ep );            //dispatch packet
+    //Serial.println("Setup packet");
     if( rcode ) {                                   //return HRSLT if not zero
+        //Serial.print("error: ");
+        //Serial.print( rcode, HEX );                                          
         return( rcode );
     }
     //Serial.println( direction, HEX ); 
@@ -93,6 +101,8 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
         rcode = ctrlData( addr, ep, nbytes, dataptr, direction );
     }
     if( rcode ) {   //return error
+        //Serial.print("Data packet:\t");
+        //Serial.print( rcode, HEX );                                          
         return( rcode );
     }
     rcode = ctrlStatus( ep, direction );                //status stage
@@ -120,7 +130,7 @@ byte USB::ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, bool
         devtable[ addr ].epinfo[ ep ].rcvToggle = bmRCVTOG1;
         //Serial.print("CtrlData toggle check: ");
         //Serial.println( dev0ep.rcvToggle, HEX );
-        rcode = inTransfer( addr, ep, nbytes, dataptr, devtable[ addr ].epinfo[ ep ].MaxPktSize );
+        rcode = inTransfer( addr, ep, nbytes, dataptr/*, devtable[ addr ].epinfo[ ep ].MaxPktSize */);
         //Serial.print("CtrlData Check:" );
         //Serial.println( devtable[ addr ].epinfo[ ep ].MaxPktSize, HEX );
         return( rcode );
@@ -133,10 +143,11 @@ byte USB::ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, bool
 /* Keep sending INs and writes data to memory area pointed by 'data'                                                           */
 /* rcode 0 if no errors. rcode 01-0f is relayed from prvXferDispatchPkt(). Rcode f0 means RCVDAVIRQ error,
             fe USB xfer timeout */
-byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data, byte maxpktsize )
+byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data /*, byte maxpktsize */)
 {
  byte rcode;
  byte pktsize;
+ byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
  unsigned int xfrlen = 0;
     //toggle( BPNT_0 );
     regWr( rHCTL, devtable[ addr ].epinfo[ ep ].rcvToggle );    //set toggle value

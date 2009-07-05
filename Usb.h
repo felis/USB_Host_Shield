@@ -98,6 +98,7 @@ class USB : public MAX3421E {
         USB( void );
         byte getUsbTaskState( void );
         EP_RECORD* getDevTableEntry( byte addr, byte ep );
+        void setDevTableEntry( byte addr, EP_RECORD* eprecord_ptr );
         // { return( usb_task_state ); }
         byte ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr );
         /* Control requests */
@@ -113,7 +114,7 @@ class USB : public MAX3421E {
         /**/
         byte ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction );
         byte ctrlStatus( byte ep, boolean direction );
-        byte inTransfer( byte addr, byte ep, unsigned int nbytes, char* data, byte maxpktsize );
+        byte inTransfer( byte addr, byte ep, unsigned int nbytes, char* data/*, byte maxpktsize */);
         byte dispatchPkt( byte token, byte ep );
         void Task( void );
     private:
