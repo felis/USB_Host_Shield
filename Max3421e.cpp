@@ -64,6 +64,16 @@ char * MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
     Deselect_MAX3421E;          //deassert SS
     return( data );
 }
+/* GPIO write. GPIO byte is split between 2 registers, so two writes are needed to write one byte */
+/* GPOUT bits are in the low nibble. 0-3 in IOPINS1, 4-7 in IOPINS2 */
+/* upper 4 bits of IOPINS1, IOPINS2 are read-only, so no masking is necessary */
+void MAX3421E::gpioWr( byte val )
+{
+    regWr( rIOPINS1, val );
+    val = val >>4;
+    regWr( rIOPINS2, val );
+    return;     
+}
 /* Single host register read        */
 byte MAX3421E::regRd( byte reg )    
 {
@@ -88,6 +98,16 @@ char * MAX3421E::bytesRd ( byte reg, byte nbytes, char  * data )
     Deselect_MAX3421E;  //deassert SS
     return( data );   
 }
+/* GPIO read. See gpioWr for explanation */
+/* GPIN pins are in high nibbles of IOPINS1, IOPINS2    */
+byte MAX3421E::gpioRd( void )
+{
+ byte tmpbyte = 0;
+    tmpbyte = regRd( rIOPINS2 );            //pins 4-7
+    tmpbyte &= 0xf0;                        //clean lower nibble
+    tmpbyte |= ( regRd( rIOPINS1 ) >>4 ) ;  //shift low bits and OR with upper from previous operation. Upper nibble zeroes during shift, at least with this compiler
+    return( tmpbyte );
+}
 /* reset MAX3421E using chip reset bit. SPI configuration is not affected   */
 boolean MAX3421E::reset()
 {
@@ -103,26 +123,28 @@ boolean MAX3421E::reset()
     return( true );
 }
 /* turn USB power on/off                                                */
-/* ON pin of VBUS switch (MAX4793 or similar) is connected to GPOUT7    */
-/* OVERLOAD pin of Vbus switch is connected to GPIN7                    */
-/* OVERLOAD state low. NO OVERLOAD or VBUS OFF state high.              */
+/* does nothing. Left for compatibility with old sketches               */
+/* will be deleted eventually */
+///* ON pin of VBUS switch (MAX4793 or similar) is connected to GPOUT7    */
+///* OVERLOAD pin of Vbus switch is connected to GPIN7                    */
+///* OVERLOAD state low. NO OVERLOAD or VBUS OFF state high.              */
 boolean MAX3421E::vbusPwr ( boolean action )
 {
-  byte tmp;
-    tmp = regRd( rIOPINS2 );                //copy of IOPINS2
-    if( action ) {                          //turn on by setting GPOUT7
-        tmp |= bmGPOUT7;
-    }
-    else {                                  //turn off by clearing GPOUT7
-        tmp &= ~bmGPOUT7;
-    }
-    regWr( rIOPINS2, tmp );                 //send GPOUT7
-    if( action ) {
-        delay( 60 );
-    }
-    if (( regRd( rIOPINS2 ) & bmGPIN7 ) == 0 ) {     // check if overload is present. MAX4793 /FLAG ( pin 4 ) goes low if overload
-        return( false );
-    }                      
+//  byte tmp;
+//    tmp = regRd( rIOPINS2 );                //copy of IOPINS2
+//    if( action ) {                          //turn on by setting GPOUT7
+//        tmp |= bmGPOUT7;
+//    }
+//    else {                                  //turn off by clearing GPOUT7
+//        tmp &= ~bmGPOUT7;
+//    }
+//    regWr( rIOPINS2, tmp );                 //send GPOUT7
+//    if( action ) {
+//        delay( 60 );
+//    }
+//    if (( regRd( rIOPINS2 ) & bmGPIN7 ) == 0 ) {     // check if overload is present. MAX4793 /FLAG ( pin 4 ) goes low if overload
+//        return( false );
+//    }                      
     return( true );                                             // power on/off successful                       
 }
 /* probe bus to determine device presense and speed */
@@ -168,12 +190,12 @@ void MAX3421E::powerOn()
     if( reset() == false ) {                                //stop/start the oscillator
         Serial.println("Error: OSCOKIRQ failed to assert");
     }
-    /* configure power switch   */
-    vbusPwr( OFF );                                         //turn Vbus power off
-    regWr( rGPINIEN, bmGPINIEN7 );                          //enable interrupt on GPIN7 (power switch overload flag)
-    if( vbusPwr( ON  ) == false ) {
-        Serial.println("Error: Vbus overload");
-    }
+//    /* configure power switch   */
+//    vbusPwr( OFF );                                         //turn Vbus power off
+//    regWr( rGPINIEN, bmGPINIEN7 );                          //enable interrupt on GPIN7 (power switch overload flag)
+//    if( vbusPwr( ON  ) == false ) {
+//        Serial.println("Error: Vbus overload");
+//    }
     /* configure host operation */
     regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ );      // set pull-downs, Host, Separate GPIN IRQ on GPX
     regWr( rHIEN, bmCONDETIE|bmFRAMEIE );                                             //connection detection
@@ -219,12 +241,12 @@ byte MAX3421E::IntHandler()
 byte MAX3421E::GpxHandler()
 {
  byte GPINIRQ = regRd( rGPINIRQ );          //read GPIN IRQ register
-    if( GPINIRQ & bmGPINIRQ7 ) {            //vbus overload
-        vbusPwr( OFF );                     //attempt powercycle
-        delay( 1000 );
-        vbusPwr( ON );
-        regWr( rGPINIRQ, bmGPINIRQ7 );
-    }       
+//    if( GPINIRQ & bmGPINIRQ7 ) {            //vbus overload
+//        vbusPwr( OFF );                     //attempt powercycle
+//        delay( 1000 );
+//        vbusPwr( ON );
+//        regWr( rGPINIRQ, bmGPINIRQ7 );
+//    }       
     return( GPINIRQ );
 }
 

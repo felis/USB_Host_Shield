@@ -19,8 +19,10 @@ class MAX3421E : public SPI {
         // byte getVbusState( void );
         void regWr( byte, byte );
         char * bytesWr( byte, byte, char * );
+        void gpioWr( byte );
         byte regRd( byte );
         char * bytesRd( byte, byte, char * );
+        byte gpioRd( void );
         boolean reset();
         boolean vbusPwr ( boolean );
         void busprobe( void );
