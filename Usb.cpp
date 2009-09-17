@@ -14,6 +14,7 @@ USB::USB () {
     usb_task_state = USB_DETACHED_SUBSTATE_INITIALIZE;  //set up state machine
     init(); 
 }
+/* Initialize data structures */
 void USB::init()
 {
   byte i;
@@ -22,7 +23,7 @@ void USB::init()
         devtable[ i ].devclass = 0;
     }
     devtable[ 0 ].epinfo = &dev0ep; //set single ep for uninitialized device  
-    dev0ep.MaxPktSize = 8;          //minimum possible                        	
+    // not necessary dev0ep.MaxPktSize = 8;          //minimum possible                        	
     dev0ep.sndToggle = bmSNDTOG0;   //set DATA0/1 toggles to 0
     dev0ep.rcvToggle = bmRCVTOG0;
 }
@@ -30,6 +31,10 @@ byte USB::getUsbTaskState( void )
 {
     return( usb_task_state );
 }
+void USB::setUsbTaskState( byte state )
+{
+    usb_task_state = state;
+}     
 EP_RECORD* USB::getDevTableEntry( byte addr, byte ep )
 {
   EP_RECORD* ptr;
@@ -38,9 +43,11 @@ EP_RECORD* USB::getDevTableEntry( byte addr, byte ep )
     return( ptr );
 }
 /* set device table entry */
+/* each device is different and has different number of endpoints. This function plugs endpoint record structure, defined in application, to devtable */
 void USB::setDevTableEntry( byte addr, EP_RECORD* eprecord_ptr )
 {
-
+    devtable[ addr ].epinfo = eprecord_ptr;
+    //return();
 }
 /* Control transfer. Sets address, endpoint, fills control packet with necessary data, dispatches control packet, and initiates bulk IN transfer,   */
 /* depending on request. Actual requests are defined as macros                                                                                      */
@@ -228,7 +235,7 @@ byte USB::dispatchPkt( byte token, byte ep )
     }//while( 1 )
     return( rcode );
 }
-
+/* USB main task. Performs enumeration/cleanup */
 void USB::Task( void )      //USB state machine
 {
   byte i;   
@@ -292,6 +299,7 @@ void USB::Task( void )      //USB state machine
             break;
         case USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE:
             // toggle( BPNT_0 );
+            devtable[ 0 ].epinfo->MaxPktSize = 8;   //set max.packet size to min.allowed
             rcode = getDevDescr( 0, 0, 8, ( char* )&buf );
             if( rcode == 0 ) {
                 devtable[ 0 ].epinfo->MaxPktSize = buf.bMaxPacketSize0;
@@ -305,7 +313,7 @@ void USB::Task( void )      //USB state machine
         case USB_STATE_ADDRESSING:
             for( i = 1; i < USB_NUMDEVICES; i++ ) {
                 if( devtable[ i ].epinfo == NULL ) {
-                    devtable[ i ].epinfo = devtable[ 0 ].epinfo;        //set correct MaxPktSize
+                    // devtable[ i ].epinfo = devtable[ 0 ].epinfo;        //set correct MaxPktSize
                     rcode = setAddr( 0, 0, i );
                     if( rcode == 0 ) {
                         tmpaddr = i;

@@ -123,8 +123,8 @@ boolean MAX3421E::reset()
     return( true );
 }
 /* turn USB power on/off                                                */
-/* does nothing. Left for compatibility with old sketches               */
-/* will be deleted eventually */
+/* does nothing, returns TRUE. Left for compatibility with old sketches               */
+/* will be deleted eventually                                           */
 ///* ON pin of VBUS switch (MAX4793 or similar) is connected to GPOUT7    */
 ///* OVERLOAD pin of Vbus switch is connected to GPIN7                    */
 ///* OVERLOAD state low. NO OVERLOAD or VBUS OFF state high.              */

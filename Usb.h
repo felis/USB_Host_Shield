@@ -97,6 +97,7 @@ class USB : public MAX3421E {
     public:
         USB( void );
         byte getUsbTaskState( void );
+        void setUsbTaskState( byte state );
         EP_RECORD* getDevTableEntry( byte addr, byte ep );
         void setDevTableEntry( byte addr, EP_RECORD* eprecord_ptr );
         // { return( usb_task_state ); }
