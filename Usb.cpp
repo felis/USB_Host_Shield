@@ -88,6 +88,8 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
     if( bmReqType & 0x80 ) {
         direction = true;                       //determine request direction
     }
+    //devtable[ addr ].epinfo[ ep ].sndToggle = bmSNDTOG0;
+    //devtable[ addr ].epinfo[ ep ].rcvToggle = bmRCVTOG0;
     /* fill in setup packet */
     setup_pkt.ReqType_u.bmRequestType = bmReqType;
     setup_pkt.bRequest = bRequest;
@@ -97,10 +99,10 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
     setup_pkt.wLength = nbytes;
     bytesWr( rSUDFIFO, 8, ( char *)&setup_pkt );    //transfer to setup packet FIFO
     rcode = dispatchPkt( tokSETUP, ep );            //dispatch packet
-    //Serial.println("Setup packet");
+    //Serial.println("Setup packet");   //DEBUG
     if( rcode ) {                                   //return HRSLT if not zero
-        //Serial.print("error: ");
-        //Serial.print( rcode, HEX );                                          
+        Serial.print("Setup packet error: ");
+        Serial.print( rcode, HEX );                                          
         return( rcode );
     }
     //Serial.println( direction, HEX ); 
@@ -108,8 +110,8 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
         rcode = ctrlData( addr, ep, nbytes, dataptr, direction );
     }
     if( rcode ) {   //return error
-        //Serial.print("Data packet:\t");
-        //Serial.print( rcode, HEX );                                          
+        Serial.print("Data packet error: ");
+        Serial.print( rcode, HEX );                                          
         return( rcode );
     }
     rcode = ctrlStatus( ep, direction );                //status stage
@@ -313,7 +315,9 @@ void USB::Task( void )      //USB state machine
         case USB_STATE_ADDRESSING:
             for( i = 1; i < USB_NUMDEVICES; i++ ) {
                 if( devtable[ i ].epinfo == NULL ) {
-                    // devtable[ i ].epinfo = devtable[ 0 ].epinfo;        //set correct MaxPktSize
+                    devtable[ i ].epinfo = devtable[ 0 ].epinfo;        //set correct MaxPktSize
+                                                                        //temporary record
+                                                                        //until plugged with real device endpoint structure
                     rcode = setAddr( 0, 0, i );
                     if( rcode == 0 ) {
                         tmpaddr = i;
