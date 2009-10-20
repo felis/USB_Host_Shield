@@ -10,16 +10,13 @@
 
 class MAX3421E : public SPI {
     // byte vbusState;
-
     public:
         MAX3421E( void );
-        //byte getVbusState() { return( vbusState ); }
         byte getVbusState( void );
         void toggle( byte pin );
-        // byte getVbusState( void );
-        void regWr( byte, byte );
+        static void regWr( byte, byte );
         char * bytesWr( byte, byte, char * );
-        void gpioWr( byte );
+        static void gpioWr( byte );
         byte regRd( byte );
         char * bytesRd( byte, byte, char * );
         byte gpioRd( void );
@@ -31,7 +28,8 @@ class MAX3421E : public SPI {
         byte GpxHandler();
         byte Task();
     private:
-        void init(); 
+        void init();
+    friend class Max_LCD;        
 };
 
 

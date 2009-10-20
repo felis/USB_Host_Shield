@@ -100,7 +100,6 @@ class USB : public MAX3421E {
         void setUsbTaskState( byte state );
         EP_RECORD* getDevTableEntry( byte addr, byte ep );
         void setDevTableEntry( byte addr, EP_RECORD* eprecord_ptr );
-        // { return( usb_task_state ); }
         byte ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr );
         /* Control requests */
         byte getDevDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr );
@@ -111,11 +110,13 @@ class USB : public MAX3421E {
         /**/
         byte setProto( byte addr, byte ep, byte interface, byte protocol );
         byte getProto( byte addr, byte ep, byte interface, char* dataptr );
+        byte setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr );
         byte getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr );
         /**/
         byte ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction );
         byte ctrlStatus( byte ep, boolean direction );
-        byte inTransfer( byte addr, byte ep, unsigned int nbytes, char* data/*, byte maxpktsize */);
+        byte inTransfer( byte addr, byte ep, unsigned int nbytes, char* data);
+        byte outTransfer( byte addr, byte ep, unsigned int nbytes, char* data );
         byte dispatchPkt( byte token, byte ep );
         void Task( void );
     private:
@@ -148,6 +149,9 @@ inline byte USB::setProto( byte addr, byte ep, byte interface, byte protocol ) {
 }
 inline byte USB::getProto( byte addr, byte ep, byte interface, char* dataptr ) {
         return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_PROTOCOL, 0x00, 0x00, interface, 0x0001, dataptr ));        
+}
+inline byte USB::setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) {
+    return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, interface, nbytes, dataptr ));
 }
 inline byte USB::getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr ) {
         return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_IDLE, reportID, 0, interface, 0x0001, dataptr ));    

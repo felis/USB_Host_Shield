@@ -72,6 +72,7 @@ void MAX3421E::gpioWr( byte val )
     regWr( rIOPINS1, val );
     val = val >>4;
     regWr( rIOPINS2, val );
+    
     return;     
 }
 /* Single host register read        */
