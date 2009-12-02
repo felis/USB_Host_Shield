@@ -247,7 +247,7 @@ byte USB::dispatchPkt( byte token, byte ep )
   unsigned long timeout = millis() + USB_XFER_TIMEOUT;;
   byte tmpdata;   
   byte rcode;
-  byte nak_count = 0;
+  unsigned int nak_count = 0; // Changed RI 15/11/09
   char retry_count = 0;
 
     while( 1 ) {

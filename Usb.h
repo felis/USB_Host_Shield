@@ -15,7 +15,7 @@
 
 
 #define USB_XFER_TIMEOUT    5000    //USB transfer timeout in milliseconds
-#define USB_NAK_LIMIT       200     //NAK limit for a transfer
+#define USB_NAK_LIMIT       32000     //NAK limit for a transfer
 #define USB_RETRY_LIMIT     3       //retry limit for a transfer
 #define USB_SETTLE_DELAY    200     //milliseconds
 
@@ -111,6 +111,7 @@ class USB : public MAX3421E {
         byte setProto( byte addr, byte ep, byte interface, byte protocol );
         byte getProto( byte addr, byte ep, byte interface, char* dataptr );
         byte setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr );
+	  byte getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr );
         byte getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr );
         /**/
         byte ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction );
@@ -153,6 +154,10 @@ inline byte USB::getProto( byte addr, byte ep, byte interface, char* dataptr ) {
 inline byte USB::setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) {
     return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, interface, nbytes, dataptr ));
 }
+inline byte USB::getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) { // ** RI 04/11/09
+    return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, dataptr ));
+}
+
 inline byte USB::getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr ) {
         return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_IDLE, reportID, 0, interface, 0x0001, dataptr ));    
 }
