@@ -32,7 +32,4 @@ class MAX3421E : public SPI {
     friend class Max_LCD;        
 };
 
-
-
-
 #endif //_MAX3421E_H_

@@ -33,10 +33,7 @@ void MAX3421E::init()
     pinMode( MAX_RESET, OUTPUT );
     digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
 }
-//byte MAX3421E::getVbusState( void )
-//{
-//    return( vbusState );
-//}
+
 void MAX3421E::toggle( byte pin )
 {
     digitalWrite( pin, HIGH );
@@ -210,8 +207,7 @@ byte MAX3421E::Task( void )
 {
  byte rcode = 0;
  byte pinvalue;
-    //Serial.print("Vbus state: ");
-    //Serial.println( vbusState, HEX );
+
     pinvalue = digitalRead( MAX_INT );    
     if( pinvalue  == LOW ) {
         rcode = IntHandler();

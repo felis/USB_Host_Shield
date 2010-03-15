@@ -12,7 +12,7 @@
 /* HID requests */
 #define bmREQ_HIDOUT        USB_SETUP_HOST_TO_DEVICE|USB_SETUP_TYPE_CLASS|USB_SETUP_RECIPIENT_INTERFACE
 #define bmREQ_HIDIN         USB_SETUP_DEVICE_TO_HOST|USB_SETUP_TYPE_CLASS|USB_SETUP_RECIPIENT_INTERFACE 
-
+#define bmREQ_HIDREPORT        USB_SETUP_DEVICE_TO_HOST|USB_SETUP_TYPE_STANDARD|USB_SETUP_RECIPIENT_INTERFACE
 
 #define USB_XFER_TIMEOUT    5000    //USB transfer timeout in milliseconds
 #define USB_NAK_LIMIT       32000     //NAK limit for a transfer
@@ -151,13 +151,16 @@ inline byte USB::setProto( byte addr, byte ep, byte interface, byte protocol ) {
 inline byte USB::getProto( byte addr, byte ep, byte interface, char* dataptr ) {
         return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_PROTOCOL, 0x00, 0x00, interface, 0x0001, dataptr ));        
 }
+//get HID report descriptor 
+byte getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr, USB Usb) {
+        return( Usb.ctrlReq( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, dataptr ));
+}
 inline byte USB::setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) {
     return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, interface, nbytes, dataptr ));
 }
 inline byte USB::getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) { // ** RI 04/11/09
     return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, dataptr ));
 }
-
 inline byte USB::getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr ) {
         return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_IDLE, reportID, 0, interface, 0x0001, dataptr ));    
 }
