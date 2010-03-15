@@ -152,7 +152,7 @@ inline byte USB::getProto( byte addr, byte ep, byte interface, char* dataptr ) {
         return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_PROTOCOL, 0x00, 0x00, interface, 0x0001, dataptr ));        
 }
 //get HID report descriptor 
-byte getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr, USB Usb) {
+inline byte getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr, USB Usb) {
         return( Usb.ctrlReq( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, dataptr ));
 }
 inline byte USB::setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) {
