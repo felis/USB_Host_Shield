@@ -110,8 +110,9 @@ class USB : public MAX3421E {
         /**/
         byte setProto( byte addr, byte ep, byte interface, byte protocol );
         byte getProto( byte addr, byte ep, byte interface, char* dataptr );
+        byte getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr );
         byte setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr );
-	  byte getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr );
+	      byte getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr );
         byte getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr );
         /**/
         byte ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction );
@@ -152,8 +153,8 @@ inline byte USB::getProto( byte addr, byte ep, byte interface, char* dataptr ) {
         return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_PROTOCOL, 0x00, 0x00, interface, 0x0001, dataptr ));        
 }
 //get HID report descriptor 
-inline byte getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr, USB Usb) {
-        return( Usb.ctrlReq( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, dataptr ));
+inline byte USB::getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr ) {
+        return( ctrlReq( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, dataptr ));
 }
 inline byte USB::setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) {
     return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, interface, nbytes, dataptr ));
