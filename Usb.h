@@ -15,9 +15,9 @@
 #define bmREQ_HIDREPORT        USB_SETUP_DEVICE_TO_HOST|USB_SETUP_TYPE_STANDARD|USB_SETUP_RECIPIENT_INTERFACE
 
 #define USB_XFER_TIMEOUT    5000    //USB transfer timeout in milliseconds
-#define USB_NAK_LIMIT       32000     //NAK limit for a transfer
+#define USB_NAK_LIMIT       32000     //NAK limit for a transfer. o meand NAKs are not counted
 #define USB_RETRY_LIMIT     3       //retry limit for a transfer
-#define USB_SETTLE_DELAY    200     //milliseconds
+#define USB_SETTLE_DELAY    200     //settle delay in milliseconds
 
 #define USB_NUMDEVICES  2           //number of USB devices
 
@@ -119,7 +119,7 @@ class USB : public MAX3421E {
         byte ctrlStatus( byte ep, boolean direction );
         byte inTransfer( byte addr, byte ep, unsigned int nbytes, char* data);
         byte outTransfer( byte addr, byte ep, unsigned int nbytes, char* data );
-        byte dispatchPkt( byte token, byte ep );
+        byte dispatchPkt( byte token, byte ep, unsigned int nak_limit = USB_NAK_LIMIT );
         void Task( void );
     private:
         void init();
