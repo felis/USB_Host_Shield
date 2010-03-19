@@ -14,9 +14,6 @@
 #define bmREQ_HIDIN         USB_SETUP_DEVICE_TO_HOST|USB_SETUP_TYPE_CLASS|USB_SETUP_RECIPIENT_INTERFACE 
 #define bmREQ_HIDREPORT     USB_SETUP_DEVICE_TO_HOST|USB_SETUP_TYPE_STANDARD|USB_SETUP_RECIPIENT_INTERFACE
 
-
-
-
 #define USB_XFER_TIMEOUT    5000    //USB transfer timeout in milliseconds
 #define USB_NAK_LIMIT       32000     //NAK limit for a transfer. o meand NAKs are not counted
 #define USB_RETRY_LIMIT     3       //retry limit for a transfer
