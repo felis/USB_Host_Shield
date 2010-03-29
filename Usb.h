@@ -100,25 +100,25 @@ class USB : public MAX3421E {
         void setUsbTaskState( byte state );
         EP_RECORD* getDevTableEntry( byte addr, byte ep );
         void setDevTableEntry( byte addr, EP_RECORD* eprecord_ptr );
-        byte ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr );
+        byte ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
         /* Control requests */
-        byte getDevDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr );
-        byte getConfDescr( byte addr, byte ep, unsigned int nbytes, byte conf, char* dataptr );
-        byte getStrDescr( byte addr, byte ep, unsigned int nbytes, byte index, unsigned int langid, char* dataptr );
-        byte setAddr( byte oldaddr, byte ep, byte newaddr );
-        byte setConf( byte addr, byte ep, byte conf_value );
+        byte getDevDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte getConfDescr( byte addr, byte ep, unsigned int nbytes, byte conf, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte getStrDescr( byte addr, byte ep, unsigned int nbytes, byte index, unsigned int langid, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte setAddr( byte oldaddr, byte ep, byte newaddr, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte setConf( byte addr, byte ep, byte conf_value, unsigned int nak_limit = USB_NAK_LIMIT );
         /**/
-        byte setProto( byte addr, byte ep, byte interface, byte protocol );
-        byte getProto( byte addr, byte ep, byte interface, char* dataptr );
-        byte getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr );
-        byte setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr );
-	      byte getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr );
-        byte getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr );
+        byte setProto( byte addr, byte ep, byte interface, byte protocol, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte getProto( byte addr, byte ep, byte interface, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
+	      byte getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
         /**/
-        byte ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction );
-        byte ctrlStatus( byte ep, boolean direction );
-        byte inTransfer( byte addr, byte ep, unsigned int nbytes, char* data);
-        byte outTransfer( byte addr, byte ep, unsigned int nbytes, char* data );
+        byte ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte ctrlStatus( byte ep, boolean direction, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte inTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte outTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsigned int nak_limit = USB_NAK_LIMIT );
         byte dispatchPkt( byte token, byte ep, unsigned int nak_limit = USB_NAK_LIMIT );
         void Task( void );
     private:
@@ -126,43 +126,43 @@ class USB : public MAX3421E {
 };
 
 //get device descriptor
-inline byte USB::getDevDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr ) {
-    return( ctrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, 0x00, USB_DESCRIPTOR_DEVICE, 0x0000, nbytes, dataptr ));
+inline byte USB::getDevDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr, unsigned int nak_limit ) {
+    return( ctrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, 0x00, USB_DESCRIPTOR_DEVICE, 0x0000, nbytes, dataptr, nak_limit ));
 }
 //get configuration descriptor  
-inline byte USB::getConfDescr( byte addr, byte ep, unsigned int nbytes, byte conf, char* dataptr ) {
-        return( ctrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, conf, USB_DESCRIPTOR_CONFIGURATION, 0x0000, nbytes, dataptr ));
+inline byte USB::getConfDescr( byte addr, byte ep, unsigned int nbytes, byte conf, char* dataptr, unsigned int nak_limit ) {
+        return( ctrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, conf, USB_DESCRIPTOR_CONFIGURATION, 0x0000, nbytes, dataptr, nak_limit ));
 }
 //get string descriptor
-inline byte USB::getStrDescr( byte addr, byte ep, unsigned int nbytes, byte index, unsigned int langid, char* dataptr ) {
-    return( ctrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, index, USB_DESCRIPTOR_STRING, langid, nbytes, dataptr ));
+inline byte USB::getStrDescr( byte addr, byte ep, unsigned int nbytes, byte index, unsigned int langid, char* dataptr, unsigned int nak_limit ) {
+    return( ctrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, index, USB_DESCRIPTOR_STRING, langid, nbytes, dataptr, nak_limit ));
 }
 //set address 
-inline byte USB::setAddr( byte oldaddr, byte ep, byte newaddr ) {
-    return( ctrlReq( oldaddr, ep, bmREQ_SET, USB_REQUEST_SET_ADDRESS, newaddr, 0x00, 0x0000, 0x0000, NULL ));
+inline byte USB::setAddr( byte oldaddr, byte ep, byte newaddr, unsigned int nak_limit ) {
+    return( ctrlReq( oldaddr, ep, bmREQ_SET, USB_REQUEST_SET_ADDRESS, newaddr, 0x00, 0x0000, 0x0000, NULL, nak_limit ));
 }
 //set configuration
-inline byte USB::setConf( byte addr, byte ep, byte conf_value ) {
-    return( ctrlReq( addr, ep, bmREQ_SET, USB_REQUEST_SET_CONFIGURATION, conf_value, 0x00, 0x0000, 0x0000, NULL ));         
+inline byte USB::setConf( byte addr, byte ep, byte conf_value, unsigned int nak_limit ) {
+    return( ctrlReq( addr, ep, bmREQ_SET, USB_REQUEST_SET_CONFIGURATION, conf_value, 0x00, 0x0000, 0x0000, NULL, nak_limit ));         
 }
 //class requests
-inline byte USB::setProto( byte addr, byte ep, byte interface, byte protocol ) {
-        return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_PROTOCOL, protocol, 0x00, interface, 0x0000, NULL ));
+inline byte USB::setProto( byte addr, byte ep, byte interface, byte protocol, unsigned int nak_limit ) {
+        return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_PROTOCOL, protocol, 0x00, interface, 0x0000, NULL, nak_limit ));
 }
-inline byte USB::getProto( byte addr, byte ep, byte interface, char* dataptr ) {
-        return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_PROTOCOL, 0x00, 0x00, interface, 0x0001, dataptr ));        
+inline byte USB::getProto( byte addr, byte ep, byte interface, char* dataptr, unsigned int nak_limit ) {
+        return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_PROTOCOL, 0x00, 0x00, interface, 0x0001, dataptr, nak_limit ));        
 }
 //get HID report descriptor 
-inline byte USB::getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr ) {
-        return( ctrlReq( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, dataptr ));
+inline byte USB::getReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr, unsigned int nak_limit ) {
+        return( ctrlReq( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, dataptr, nak_limit ));
 }
-inline byte USB::setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) {
-    return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, interface, nbytes, dataptr ));
+inline byte USB::setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr, unsigned int nak_limit ) {
+    return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, interface, nbytes, dataptr, nak_limit ));
 }
-inline byte USB::getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr ) { // ** RI 04/11/09
-    return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, dataptr ));
+inline byte USB::getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr, unsigned int nak_limit ) { // ** RI 04/11/09
+    return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, dataptr, nak_limit ));
 }
-inline byte USB::getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr ) {
-        return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_IDLE, reportID, 0, interface, 0x0001, dataptr ));    
+inline byte USB::getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr, unsigned int nak_limit ) {
+        return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_IDLE, reportID, 0, interface, 0x0001, dataptr, nak_limit ));    
 }
 #endif //_usb_h_

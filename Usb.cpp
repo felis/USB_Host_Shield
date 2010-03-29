@@ -50,11 +50,11 @@ void USB::setDevTableEntry( byte addr, EP_RECORD* eprecord_ptr )
     //return();
 }
 /* Control transfer. Sets address, endpoint, fills control packet with necessary data, dispatches control packet, and initiates bulk IN transfer,   */
-/* depending on request. Actual requests are defined as macros                                                                                      */
+/* depending on request. Actual requests are defined as inlines                                                                                      */
 /* return codes:                */
 /* 00       =   success         */
 /* 01-0f    =   non-zero HRSLT  */
-byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr )
+byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr, unsigned int nak_limit )
 {
  boolean direction = false;     //request direction, IN or OUT
  byte rcode;   
@@ -72,7 +72,7 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
     setup_pkt.wIndex = wInd;
     setup_pkt.wLength = nbytes;
     bytesWr( rSUDFIFO, 8, ( char *)&setup_pkt );    //transfer to setup packet FIFO
-    rcode = dispatchPkt( tokSETUP, ep );            //dispatch packet
+    rcode = dispatchPkt( tokSETUP, ep, nak_limit );            //dispatch packet
     //Serial.println("Setup packet");   //DEBUG
     if( rcode ) {                                   //return HRSLT if not zero
         Serial.print("Setup packet error: ");
@@ -93,42 +93,37 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
 }
 /* Control transfer with status stage and no data stage */
 /* Assumed peripheral address is already set */
-byte USB::ctrlStatus( byte ep, boolean direction )
+byte USB::ctrlStatus( byte ep, boolean direction, unsigned int nak_limit )
 {
   byte rcode;
     if( direction ) { //GET
-        rcode = dispatchPkt( tokOUTHS, ep );
+        rcode = dispatchPkt( tokOUTHS, ep, nak_limit );
     }
     else {
-        rcode = dispatchPkt( tokINHS, ep );
+        rcode = dispatchPkt( tokINHS, ep, nak_limit );
     }
     return( rcode );
 }
 /* Control transfer with data stage. Stages 2 and 3 of control transfer. Assumes preipheral address is set and setup packet has been sent */
-byte USB::ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction )
+byte USB::ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction, unsigned int nak_limit )
 {
-  byte rcode;
-    
-    if( direction ) {                      //IN transfer
-        devtable[ addr ].epinfo[ ep ].rcvToggle = bmRCVTOG1;
-        //Serial.print("CtrlData toggle check: ");
-        //Serial.println( dev0ep.rcvToggle, HEX );
-        rcode = inTransfer( addr, ep, nbytes, dataptr );
-        //Serial.print("CtrlData Check:" );
-        //Serial.println( devtable[ addr ].epinfo[ ep ].MaxPktSize, HEX );
-        return( rcode );
-    }
-    else {              //OUT transfer
-        devtable[ addr ].epinfo[ ep ].sndToggle = bmSNDTOG1;
-        rcode = outTransfer( addr, ep, nbytes, dataptr );
-        return( rcode );
-    }    
+ byte rcode;
+  if( direction ) {                      //IN transfer
+    devtable[ addr ].epinfo[ ep ].rcvToggle = bmRCVTOG1;
+    rcode = inTransfer( addr, ep, nbytes, dataptr, nak_limit );
+    return( rcode );
+  }
+  else {              //OUT transfer
+    devtable[ addr ].epinfo[ ep ].sndToggle = bmSNDTOG1;
+    rcode = outTransfer( addr, ep, nbytes, dataptr, nak_limit );
+    return( rcode );
+  }    
 }
 /* IN transfer to arbitrary endpoint. Assumes PERADDR is set. Handles multiple packets if necessary. Transfers 'nbytes' bytes. */
 /* Keep sending INs and writes data to memory area pointed by 'data'                                                           */
-/* rcode 0 if no errors. rcode 01-0f is relayed from prvXferDispatchPkt(). Rcode f0 means RCVDAVIRQ error,
+/* rcode 0 if no errors. rcode 01-0f is relayed from dispatchPkt(). Rcode f0 means RCVDAVIRQ error,
             fe USB xfer timeout */
-byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data )
+byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsigned int nak_limit )
 {
  byte rcode;
  byte pktsize;
@@ -136,7 +131,7 @@ byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data )
  unsigned int xfrlen = 0;
     regWr( rHCTL, devtable[ addr ].epinfo[ ep ].rcvToggle );    //set toggle value
     while( 1 ) { // use a 'return' to exit this loop
-        rcode = dispatchPkt( tokIN, ep );           //IN packet to EP-'endpoint'. Function takes care of NAKS.
+        rcode = dispatchPkt( tokIN, ep, nak_limit );           //IN packet to EP-'endpoint'. Function takes care of NAKS.
         if( rcode ) {
             return( rcode );                            //should be 0, indicating ACK. Else return error code.
         }
@@ -167,105 +162,103 @@ byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data )
 /* Handles NAK bug per Maxim Application Note 4000 for single buffer transfer   */
 /* rcode 0 if no errors. rcode 01-0f is relayed from HRSL                       */
 /* major part of this function borrowed from code shared by Richard Ibbotson    */
-byte USB::outTransfer( byte addr, byte ep, unsigned int nbytes, char* data )
+byte USB::outTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsigned int nak_limit )
 {
  byte rcode, retry_count;
  char* data_p = data;   //local copy of the data pointer
  unsigned int bytes_tosend, nak_count;
  unsigned int bytes_left = nbytes;
  byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
-
-    regWr( rHCTL, devtable[ addr ].epinfo[ ep ].sndToggle );    //set toggle value
-    
-    while( bytes_left ) {
-        retry_count = 0;
-        nak_count = 0;
-        bytes_tosend = ( bytes_left >= maxpktsize ) ? maxpktsize : bytes_left;
-        bytesWr( rSNDFIFO, bytes_tosend, data_p );      //filling output FIFO
-        regWr( rSNDBC, bytes_tosend );                  //set number of bytes    
-        regWr( rHXFR, ( tokOUT | ep ));                 //dispatch packet
-        while(!(regRd( rHIRQ ) & bmHXFRDNIRQ ));        //wait for the completion IRQ
-        regWr( rHIRQ, bmHXFRDNIRQ );                    //clear IRQ
-        rcode = ( regRd( rHRSL ) & 0x0f );
-        while ( rcode ) {
-            if( rcode == hrNAK ) {
-                nak_count++;
-                if( nak_count == USB_NAK_LIMIT ) return( rcode);         //return NAK
-            }
-            else if( rcode == hrTIMEOUT ) {
-                retry_count++;
-                if( retry_count == USB_RETRY_LIMIT ) return( rcode );    //return TIMEOUT
-            }
-            else return( rcode );
-            /**/
-            /* process NAK according to Host out NAK bug */
-            regWr( rSNDBC, 0 );
-            regWr( rSNDFIFO, *data_p );
-            regWr( rSNDBC, bytes_tosend );
-            regWr( rHXFR, ( tokOUT | ep ));                 //dispatch packet
-            while(!(regRd( rHIRQ ) & bmHXFRDNIRQ ));        //wait for the completion IRQ
-            regWr( rHIRQ, bmHXFRDNIRQ );                    //clear IRQ
-            rcode = ( regRd( rHRSL ) & 0x0f );
-        }//while( rcode....
-        bytes_left -= bytes_tosend;
-        data_p += bytes_tosend;
-    }//while( bytes_left...
-    devtable[ addr ].epinfo[ ep ].sndToggle = ( regRd( rHRSL ) & bmSNDTOGRD ) ? bmSNDTOG1 : bmSNDTOG0;  //update toggle
-    return( rcode );    //should be 0 in all cases
+ unsigned long timeout = millis() + USB_XFER_TIMEOUT;
+ 
+  regWr( rHCTL, devtable[ addr ].epinfo[ ep ].sndToggle );    //set toggle value
+  while( bytes_left ) {
+    retry_count = 0;
+    nak_count = 0;
+    bytes_tosend = ( bytes_left >= maxpktsize ) ? maxpktsize : bytes_left;
+    bytesWr( rSNDFIFO, bytes_tosend, data_p );      //filling output FIFO
+    regWr( rSNDBC, bytes_tosend );                  //set number of bytes    
+    regWr( rHXFR, ( tokOUT | ep ));                 //dispatch packet
+    while(!(regRd( rHIRQ ) & bmHXFRDNIRQ ));        //wait for the completion IRQ
+    regWr( rHIRQ, bmHXFRDNIRQ );                    //clear IRQ
+    rcode = ( regRd( rHRSL ) & 0x0f );
+    while( rcode && ( timeout > millis())) {
+      switch( rcode ) {
+        case hrNAK:
+          nak_count++;
+          if( nak_limit && ( nak_count == USB_NAK_LIMIT )) {
+            return( rcode);                                   //return NAK
+          }
+          break;
+        case hrTIMEOUT:
+          retry_count++;
+          if( retry_count == USB_RETRY_LIMIT ) {
+            return( rcode );    //return TIMEOUT
+          }
+          break;
+        default:  
+          return( rcode );
+      }//switch( rcode...
+      /* process NAK according to Host out NAK bug */
+      regWr( rSNDBC, 0 );
+      regWr( rSNDFIFO, *data_p );
+      regWr( rSNDBC, bytes_tosend );
+      regWr( rHXFR, ( tokOUT | ep ));                 //dispatch packet
+      while(!(regRd( rHIRQ ) & bmHXFRDNIRQ ));        //wait for the completion IRQ
+      regWr( rHIRQ, bmHXFRDNIRQ );                    //clear IRQ
+      rcode = ( regRd( rHRSL ) & 0x0f );
+    }//while( rcode && ....
+    bytes_left -= bytes_tosend;
+    data_p += bytes_tosend;
+  }//while( bytes_left...
+  devtable[ addr ].epinfo[ ep ].sndToggle = ( regRd( rHRSL ) & bmSNDTOGRD ) ? bmSNDTOG1 : bmSNDTOG0;  //update toggle
+  return( rcode );    //should be 0 in all cases
 }
 /* dispatch usb packet. Assumes peripheral address is set and relevant buffer is loaded/empty       */
 /* If NAK, tries to re-send up to nak_limit times                                                   */
 /* If nak_limit == 0, do not count NAKs, exit after timeout                                         */
 /* If bus timeout, re-sends up to USB_RETRY_LIMIT times                                             */
 /* return codes 0x00-0x0f are HRSLT( 0x00 being success ), 0xff means timeout                       */
-byte USB::dispatchPkt( byte token, byte ep, unsigned int nak_limit  )
+byte USB::dispatchPkt( byte token, byte ep, unsigned int nak_limit )
 {
-  unsigned long timeout = millis() + USB_XFER_TIMEOUT;;
-  byte tmpdata;   
-  byte rcode = 0;
-  unsigned int nak_count = 0; 
-  char retry_count = 0;
+ unsigned long timeout = millis() + USB_XFER_TIMEOUT;
+ byte tmpdata;   
+ byte rcode;
+ unsigned int nak_count = 0;
+ char retry_count = 0;
 
-  while( millis() < timeout ) {
+  while( timeout > millis() ) {
     regWr( rHXFR, ( token|ep ));            //launch the transfer
-    rcode = 0xff;                           //set rcode to timeout 
+    rcode = 0xff;   
     while( millis() < timeout ) {           //wait for transfer completion
-      tmpdata = regRd( rHIRQ );             
-      if( tmpdata & bmHXFRDNIRQ ) {         //check transfer done interrupt
-        regWr( rHIRQ, bmHXFRDNIRQ );        //clear the interrupt and continue
+      tmpdata = regRd( rHIRQ );
+      if( tmpdata & bmHXFRDNIRQ ) {
+        regWr( rHIRQ, bmHXFRDNIRQ );    //clear the interrupt
         rcode = 0x00;
         break;
       }//if( tmpdata & bmHXFRDNIRQ
     }//while ( millis() < timeout
-    if( rcode != 0x00 ) {                   //exit if timeout
+    if( rcode != 0x00 ) {                //exit if timeout
       return( rcode );
     }
-    rcode = ( regRd( rHRSL ) & 0x0f );      //check transfer result
-    if( rcode == hrNAK ) {
-      if( nak_limit ) {                     //if we are counting NAKs
-        nak_count++;
-        if( nak_count == nak_limit ) {
-          break;                            //no more transfer attempts
+    rcode = ( regRd( rHRSL ) & 0x0f );  //analyze transfer result
+    switch( rcode ) {
+      case hrNAK:
+        nak_count ++;
+        if( nak_limit && ( nak_count == nak_limit )) {
+          return( rcode );
         }
-        else {
-          continue;                         //transfer again if any NAKs left
-        }
-      }//if( nak_limit
-      else {
-        continue;                           //transfer again till timeout
-      }
-    }//if( rcode == hrNAK
-    if( rcode == hrTIMEOUT ) {
-      retry_count++;
-      if( retry_count == USB_RETRY_LIMIT ) {
         break;
-      }
-      else {
-        continue;
-      }
-    }//if( rcode == hrTIMEOUT
-    else break;
-  }//while( millis() < timeout
+      case hrTIMEOUT:
+        retry_count ++;
+        if( retry_count == USB_RETRY_LIMIT ) {
+          return( rcode );
+        }
+        break;
+      default:
+        return( rcode );
+    }//switch( rcode
+  }//while( timeout > millis() 
   return( rcode );
 }
 /* USB main task. Performs enumeration/cleanup */
@@ -314,7 +307,6 @@ void USB::Task( void )      //USB state machine
             }
             break;
         case USB_ATTACHED_SUBSTATE_RESET_DEVICE:
-            // regWr( rHIRQ, bmBUSEVENTIRQ );              //clear bus event IRQ
             regWr( rHCTL, bmBUSRST );                   //issue bus reset
             usb_task_state = USB_ATTACHED_SUBSTATE_WAIT_RESET_COMPLETE;
             break;
