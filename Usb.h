@@ -93,7 +93,7 @@ class USB : public MAX3421E {
 //EP_RECORD dev0ep;         //Endpoint data structure used during enumeration for uninitialized device
 
 //byte usb_task_state;
-//test commit
+
     public:
         USB( void );
         byte getUsbTaskState( void );
