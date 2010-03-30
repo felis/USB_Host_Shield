@@ -2,7 +2,7 @@
 #ifndef _usb_h_
 #define _usb_h_
 
-#include <MAX3421E.h>
+#include <Max3421e.h>
 #include "ch9.h"
 
 /* Common setup data constant combinations  */
