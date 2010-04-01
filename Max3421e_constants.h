@@ -6,7 +6,7 @@
 /* Arduino pin definitions */
 #define MAX_SS    10
 #define MAX_INT   9
-#define MAX_GPX   8
+#define MAX_GPX   3
 #define MAX_RESET 7
 
 #define BPNT_0      3
