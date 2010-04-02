@@ -208,7 +208,7 @@ void MAX3421E::powerOn()
 //    }
     /* configure host operation */
     regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ );      // set pull-downs, Host, Separate GPIN IRQ on GPX
-    regWr( rHIEN, bmCONDETIE|bmFRAMEIE );                                             //connection detection
+    regWr( rHIEN, bmCONDETIE/*|bmFRAMEIE */);                                             //connection detection
     regWr(rHCTL,bmSAMPLEBUS);                                               // update the JSTATUS and KSTATUS bits
     busprobe();                                                             //check if anything is connected
     regWr( rHIRQ, bmCONDETIRQ );                                            //clear connection detect interrupt                 

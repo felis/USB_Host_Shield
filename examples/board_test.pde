@@ -16,7 +16,7 @@ USB Usb;
 
 void setup()
 {
-  Serial.begin( 9600 );
+  Serial.begin( 115200 );
   Max.powerOn();
   printProgStr( startBanner );
   printProgStr( anykey_msg );
@@ -30,11 +30,11 @@ void loop()
   /* SPI short test */
   if (!revregcheck()) test_halted();
   /* GPIO test */
-  if (!gpiocheck()) Serial.print("\r\nGPIO check failed. Make sure GPIO loopback adapter is installed");
+  if (!gpiocheck()) printProgStr(PSTR("\r\nGPIO check failed. Make sure GPIO loopback adapter is installed"));
   /* SPI long test */
   if (!spitest()) test_halted();      //test SPI for transmission errors
-  if (!osctest()) Serial.print("OSCOK test failed. Check the oscillator");
-  if (!usbtest()) Serial.print("USB connection test failed. Check traces from USB connector to MAX3421E, as well as VBUS");  //never gets here
+  if (!osctest()) printProgStr(PSTR("OSCOK test failed. Check the oscillator"));
+  if (!usbtest()) printProgStr(PSTR("USB connection test failed. Check traces from USB connector to MAX3421E, as well as VBUS"));  //never gets here
     /* All tests passed */
   printProgStr( anykey_msg );
 }
@@ -44,26 +44,25 @@ void loop()
 bool revregcheck()
 {
   byte tmpbyte;
-  printProgStr( revregcheck_begin_msg );
+  printProgStr(PSTR("\r\nReading REVISION register...Die revision "));
   tmpbyte = Max.regRd( rREVISION );
   switch( tmpbyte ) {
     case( 0x01 ):  //rev.01
-      Serial.print("01");
+      printProgStr(PSTR("01"));
       break;  
     case( 0x12 ):  //rev.02
-      Serial.print("02");
+      printProgStr(PSTR("02"));
       break;
     case( 0x13 ):  //rev.03
-      Serial.print("03");
+      printProgStr(PSTR("03"));
       break;
     default:
-      printProgStr( revregcheck_revision_invalid );
+      printProgStr(PSTR("invalid. Value returned: "));
       print_hex( tmpbyte, 8 );
       printProgStr( testfailed_msg );
       return( false );
       break;
   }//switch( tmpbyte )...
-    
   printProgStr( testpassed_msg );
   return( true );
 }
@@ -73,7 +72,7 @@ bool spitest()
   byte l = 0;
   byte k = 0;
   byte gpinpol_copy = Max.regRd( rGPINPOL );
-  printProgStr( spitest_begin_msg );
+  printProgStr(PSTR("\r\nSPI test. Each  '.' indicates 64K transferred. Stops after transferring 1MB (16 dots)\r\n"));
   /**/
   for( byte j = 0; j < 16; j++ ) {
     for( word i = 0; i < 65535; i++ ) {
@@ -82,7 +81,7 @@ bool spitest()
       if( l != k ) {
         printProgStr( spitest_fail_msg );
         print_hex( k, 8);
-        printProgStr( spitest_fail_msg_2 );
+        printProgStr(PSTR("Value read: "));
         print_hex( l, 8 );
         return( false );                  //test failed
       }
@@ -97,21 +96,21 @@ bool spitest()
 /* Oscillator test */
 bool osctest()
 {
-  printProgStr( osctest_begin_msg );
+  printProgStr(PSTR("\r\nOscillator start/stop test."));
   printProgStr( osctest_oscstate_msg );
   check_OSCOKIRQ();                          //print OSCOK state
-  printProgStr( osctest_reset_msg );
+  printProgStr(PSTR("\r\nSetting CHIP RESET."));
   Max.regWr( rUSBCTL, bmCHIPRES );              //Chip reset. This stops the oscillator
   printProgStr( osctest_oscstate_msg );
   check_OSCOKIRQ();  //print OSCOK state
-  printProgStr( osctest_release_msg );
+  printProgStr(PSTR("\r\nClearing CHIP RESET. "));
   Max.regWr( rUSBCTL, 0x00 );                //Chip reset release
   for( word i = 0; i < 65535; i++) {
     if( Max.regRd( rUSBIRQ ) & bmOSCOKIRQ ) {
-      printProgStr( osctest_PLLstable_msg );
+      printProgStr(PSTR("PLL is stable. Time to stabilize - "));
       Serial.print( i, DEC );
-      Serial.print(" cycles");
-      printProgStr(testpassed_msg);
+      printProgStr(PSTR(" cycles"));
+      printProgStr( testpassed_msg );
       return( true );
     }
   }//for i = 
@@ -121,10 +120,10 @@ bool osctest()
 void check_OSCOKIRQ()
 {
   if( Max.regRd( rUSBIRQ ) & bmOSCOKIRQ ) {  //checking oscillator state
-    Serial.print("ON");
+    printProgStr(PSTR("ON"));
   }
   else {
-    Serial.print("OFF");
+    printProgStr(PSTR("OFF"));
   }
 }
 /* Test USB connectivity */
@@ -134,38 +133,40 @@ bool usbtest()
   byte usbstate;
     Max.powerOn();
     delay( 200 );
-    printProgStr( usbtest_begin_msg );
+    printProgStr(PSTR("\r\nUSB Connectivity test. Waiting for device connection... "));
     while( 1 ) {
-      delay( 100 );
+      delay( 200 );
       Max.Task();
       Usb.Task();
       usbstate = Usb.getUsbTaskState();
       switch( usbstate ) {
         case( USB_ATTACHED_SUBSTATE_RESET_DEVICE ):
-          printProgStr( usbtest_device_reset_msg );
+          printProgStr(PSTR("\r\nDevice connected. Resetting"));
           break;
         case( USB_ATTACHED_SUBSTATE_WAIT_SOF ): 
-          printProgStr( usbtest_waitsof_msg );
+          printProgStr(PSTR("\r\nReset complete. Waiting for the first SOF..."));
           break;  
         case( USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE ):
-          printProgStr( usbtest_enu_msg );
+          printProgStr(PSTR("\r\nSOF generation started. Enumerating device."));
           break;
         case( USB_STATE_ADDRESSING ):
-          printProgStr( usbtest_addr_msg );
+          printProgStr(PSTR("\r\nSetting device address"));
+          break;
         case( USB_STATE_CONFIGURING ):
-          printProgStr( usbtest_getdevdescr_msg);
+          printProgStr(PSTR("\r\nGetting device descriptor"));
           rcode = getdevdescr( 1 );
             if( rcode ) {
-              printProgStr( usbtest_err_getdevdescr_msg );
+              printProgStr(PSTR("\r\nError reading device descriptor. Error code "));
               print_hex( rcode, 8 );
             }
             else {
-              Serial.print("\r\n\nAll tests passed. Press RESET to restart test"); 
+              printProgStr(PSTR("\r\n\nAll tests passed. Press RESET to restart test")); 
               while(1);
             }
           break;
         case( USB_STATE_ERROR ):
-          printProgStr( usbtest_error_state_msg ); 
+          printProgStr(PSTR("\r\nUSB state machine reached error state"));
+          break;
         default:
           break;
     }//switch
@@ -180,34 +181,34 @@ byte getdevdescr( byte addr )
   if( rcode ) {
     return( rcode );
   }
-  printProgStr(Dev_Header_str);
-  printProgStr(Dev_Length_str);
+  printProgStr(PSTR("\r\nDevice descriptor: "));
+  printProgStr(PSTR("\r\nDescriptor Length:\t"));
   print_hex( buf.bLength, 8 );
-  printProgStr(Dev_Type_str);
+  printProgStr(PSTR("\r\nDescriptor type:\t"));
   print_hex( buf.bDescriptorType, 8 );
-  printProgStr(Dev_Version_str);
+  printProgStr(PSTR("\r\nUSB version:\t"));
   print_hex( buf.bcdUSB, 16 );
-  printProgStr(Dev_Class_str);
+  printProgStr(PSTR("\r\nDevice class:\t"));
   print_hex( buf.bDeviceClass, 8 );
-  printProgStr(Dev_Subclass_str);
+  printProgStr(PSTR("\r\nDevice Subclass:\t"));
   print_hex( buf.bDeviceSubClass, 8 );
-  printProgStr(Dev_Protocol_str);
+  printProgStr(PSTR("\r\nDevice Protocol:\t"));
   print_hex( buf.bDeviceProtocol, 8 );
-  printProgStr(Dev_Pktsize_str);
+  printProgStr(PSTR("\r\nMax.packet size:\t"));
   print_hex( buf.bMaxPacketSize0, 8 );
-  printProgStr(Dev_Vendor_str);
+  printProgStr(PSTR("\r\nVendor ID:\t"));
   print_hex( buf.idVendor, 16 );
-  printProgStr(Dev_Product_str);
+  printProgStr(PSTR("\r\nProduct ID:\t"));
   print_hex( buf.idProduct, 16 );
-  printProgStr(Dev_Revision_str);
+  printProgStr(PSTR("\r\nRevision ID:\t"));
   print_hex( buf.bcdDevice, 16 );
-  printProgStr(Dev_Mfg_str);
+  printProgStr(PSTR("\r\nMfg.string index:\t"));
   print_hex( buf.iManufacturer, 8 );
-  printProgStr(Dev_Prod_str);
+  printProgStr(PSTR("\r\nProd.string index:\t"));
   print_hex( buf.iProduct, 8 );
-  printProgStr(Dev_Serial_str);
+  printProgStr(PSTR("\r\nSerial number index:\t"));
   print_hex( buf.iSerialNumber, 8 );
-  printProgStr(Dev_Nconf_str);
+  printProgStr(PSTR("\r\nNumber of conf.:\t"));
   print_hex( buf.bNumConfigurations, 8 );
   return( 0 );
 }
@@ -216,16 +217,16 @@ byte getdevdescr( byte addr )
 bool gpiocheck()
 {
  byte tmpbyte = 0;
-  printProgStr( gpiocheck_begin_msg );
+  printProgStr(PSTR("\r\nChecking GPIO lines. Install GPIO loopback adapter and press any key to continue..."));
   while( Serial.available() == 0 );  //wait for input
   Serial.read();                     //empty input buffer  
     for( byte i = 0; i < 255; i++ ) {
       Max.gpioWr( i );
       tmpbyte = Max.gpioRd();
       if( tmpbyte != i ) {
-        Serial.print("GPIO read/write mismatch. Write: ");
+        printProgStr(PSTR("GPIO read/write mismatch. Write: "));
         Serial.print(i, HEX);
-        Serial.print(" Read: ");
+        printProgStr(PSTR(" Read: "));
         Serial.println( tmpbyte, HEX );
         return( false );
       }//if( tmpbyte != i )
@@ -237,8 +238,8 @@ bool gpiocheck()
 void test_halted()
 {
   printProgStr( test_halted_msg );
-  printProgStr( reset_msg );
-  while(1)  {            //System Stop. Generating pattern to keep SCLK, MISO, MOSI, SS busy
+  printProgStr(PSTR("\r\nPress RESET to restart test"));
+  while( 1 )  {            //System Stop. Generating pattern to keep SCLK, MISO, MOSI, SS busy
     Select_MAX3421E;
     //Max.regRd( rREVISION );
     Spi.transfer( 0x55 ); 
@@ -246,12 +247,18 @@ void test_halted()
   }
 }
 /* given a PROGMEM string, use Serial.print() to send it out */
-void printProgStr(const prog_char str[])
+/* Some non-intuitive casting necessary:                           */
+/* printProgStr(PSTR("Func.Mode:\t0x"));                           */
+/* printProgStr((char*)pgm_read_word(&mtpopNames[(op & 0xFF)]));   */
+void printProgStr(const char* str )
 {
+  if(!str) { 
+    return;
+  }
   char c;
-  if(!str) return;
-  while((c = pgm_read_byte(str++)))
+  while((c = pgm_read_byte(str++))) {
     Serial.print(c,BYTE);
+  }
 }
 /* prints hex numbers with leading zeroes */
 // copyright, Peter H Anderson, Baltimore, MD, Nov, '07
