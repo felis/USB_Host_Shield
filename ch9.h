@@ -50,10 +50,6 @@
 #define USB_DESCRIPTOR_INTERFACE_POWER  0x08    // bDescriptorType for Interface Power.
 #define USB_DESCRIPTOR_OTG              0x09    // bDescriptorType for an OTG Descriptor.
 
-/* Class Descriptors */
-
-
-
 /* OTG SET FEATURE Constants    */
 #define OTG_FEATURE_B_HNP_ENABLE                3       // SET FEATURE OTG - Enable B device to perform HNP
 #define OTG_FEATURE_A_HNP_SUPPORT               4       // SET FEATURE OTG - A device supports HNP
@@ -154,13 +150,17 @@ typedef struct
 } USB_ENDPOINT_DESCRIPTOR;
 /* HID descriptor */
 typedef struct {
-    byte bLength;			
-	byte bDescriptorType;	
-	unsigned int bcdHID;			
-    byte bCountryCode;		
-	byte bNumDescriptors;
-	byte bDescrType;			
-    unsigned int wDescriptorLength;
+  uint8_t bLength;			
+  uint8_t bDescriptorType;	
+  uint16_t bcdHID;			
+  uint8_t bCountryCode;		
+  uint8_t bNumDescriptors;
+  /* at least one descriptor follows, 3 bytes - descritor type, descriptor length */
 } USB_HID_DESCRIPTOR;
+/* HID Class descriptor format in HID descriptor */
+typedef struct {
+  uint8_t bDescriptorType;
+  uint16_t wDescriptorLength;
+} HID_CLASS;
 
 #endif // _ch9_h_

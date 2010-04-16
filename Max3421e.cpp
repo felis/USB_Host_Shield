@@ -5,35 +5,56 @@
 
 static byte vbusState;
 
+    uint8_t _ss_pin;     //slave select
+    uint8_t _int_pin;    //interrupt
+    uint8_t _reset_pin;  //reset      
+
 /* Functions    */
 
 /* Constructor */
-MAX3421E::MAX3421E()
+MAX3421E::MAX3421E( uint8_t _ss, uint8_t _int, uint8_t _reset )
 {
+    /* assign pins */
+    _ss_pin = _ss;   
+    _int_pin = _int;
+    _reset_pin = _reset;
+    
+//    Serial.println( _ss_pin, DEC );
+//    Serial.println( _int_pin, DEC );
+//    Serial.println( _reset_pin, DEC );
+    
+    /* setup pins */
+    pinMode( _int_pin, INPUT);
+    pinMode( _ss_pin, OUTPUT );
+    digitalWrite(_ss_pin,HIGH);   //deselect MAX3421E              
+    pinMode( _reset_pin, OUTPUT );
+    digitalWrite( _reset_pin, HIGH );  //release MAX3421E from reset
+    
+    
     //Serial.begin( 9600 );
-    init();
+    //init();
     //powerOn();
 }
 byte MAX3421E::getVbusState( void )
 { 
     return( vbusState );
 }
+byte MAX3421E::getvar( void )
+{
+  return( _int_pin );
+}    
 /* initialization */
 void MAX3421E::init()
 {
     /* setup pins */
-    pinMode( MAX_INT, INPUT);
-    // pinMode( MAX_GPX, INPUT );
-    pinMode( MAX_SS, OUTPUT );
-    //pinMode( BPNT_0, OUTPUT );
-    //pinMode( BPNT_1, OUTPUT );
-    //digitalWrite( BPNT_0, LOW );
-    //digitalWrite( BPNT_1, LOW );
-    Deselect_MAX3421E;              
-    pinMode( MAX_RESET, OUTPUT );
-    digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
+//    pinMode( MAX_INT, INPUT);
+//    pinMode( MAX_SS, OUTPUT );
+//    Deselect_MAX3421E;              
+//    pinMode( MAX_RESET, OUTPUT );
+//    digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
 }
 
+/* toggles breakpoint pin during debug */
 void MAX3421E::toggle( byte pin )
 {
     digitalWrite( pin, HIGH );
@@ -44,26 +65,26 @@ void MAX3421E::regWr( byte reg, byte val)
 {
   uint8_t SaveSREG = SREG;       //save interrupt flag
       cli();                        //disable interrupts
-      Select_MAX3421E;
+      digitalWrite(_ss_pin,LOW);
       Spi.transfer( reg + 2 ); //set WR bit and send register number
       Spi.transfer( val );
-      Deselect_MAX3421E;
+      digitalWrite(_ss_pin,HIGH);
       SREG = SaveSREG;              //restore interrupt flag 
 }
 /* multiple-byte write */
 /* returns a pointer to a memory position after last written */
-char * MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
+char* MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
 {
- uint8_t SaveSREG = SREG;       //save interrupt flag
-  cli();                        //disable interrupts   
-    Select_MAX3421E;            //assert SS
+ uint8_t SaveSREG = SREG;         //save interrupt flag
+  cli();                          //disable interrupts   
+    digitalWrite(_ss_pin,LOW);    //assert SS
     Spi.transfer ( reg + 2 );   //set W/R bit and select register   
     while( nbytes ) {                
         Spi.transfer( *data );  // send the next data byte
         data++;                 // advance the pointer
         nbytes--;
     }
-    Deselect_MAX3421E;          //deassert SS
+    digitalWrite(_ss_pin,HIGH);          //deassert SS
     SREG = SaveSREG;              //restore interrupt flag 
     return( data );
 }
@@ -84,10 +105,10 @@ byte MAX3421E::regRd( byte reg )
   byte tmp;
   uint8_t SaveSREG = SREG;       //save interrupt flag
     cli();                        //disable interrupts
-    Select_MAX3421E;
+    digitalWrite(_ss_pin,LOW);
     Spi.transfer ( reg );         //send register number
     tmp = Spi.transfer ( 0x00 );  //send empty byte, read register contents
-    Deselect_MAX3421E;
+    digitalWrite(_ss_pin,HIGH);
     SREG = SaveSREG;              //restore interrupt flag 
     return (tmp);
 }
@@ -97,14 +118,14 @@ char * MAX3421E::bytesRd ( byte reg, byte nbytes, char  * data )
 {
   uint8_t SaveSREG = SREG;       //save interrupt flag
     cli();                        //disable interrupts
-    Select_MAX3421E;    //assert SS
+    digitalWrite(_ss_pin,LOW);    //assert SS
     Spi.transfer ( reg );     //send register number
     while( nbytes ) {
         *data = Spi.transfer ( 0x00 );    //send empty byte, read register contents
         data++;
         nbytes--;
     }
-    Deselect_MAX3421E;  //deassert SS
+    digitalWrite(_ss_pin,HIGH);  //deassert SS
     SREG = SaveSREG;              //restore interrupt flag
     return( data );   
 }
@@ -212,7 +233,8 @@ void MAX3421E::powerOn()
     regWr(rHCTL,bmSAMPLEBUS);                                               // update the JSTATUS and KSTATUS bits
     busprobe();                                                             //check if anything is connected
     regWr( rHIRQ, bmCONDETIRQ );                                            //clear connection detect interrupt                 
-    regWr( rCPUCTL, 0x01 );                                                 //enable interrupt pin
+    //regWr( rHIRQ, 0xff );
+    regWr( rCPUCTL, bmIE );                                                 //enable interrupt pin
 }
 /* MAX3421 state change task and interrupt handler */
 byte MAX3421E::Task( void )
@@ -220,7 +242,7 @@ byte MAX3421E::Task( void )
  byte rcode = 0;
  byte pinvalue;
 
-    pinvalue = digitalRead( MAX_INT );    
+    pinvalue = digitalRead( _int_pin );    
     if( pinvalue  == LOW ) {
         rcode = IntHandler();
     }

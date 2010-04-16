@@ -3,17 +3,24 @@
 #ifndef _MAX3421Econstants_h_
 #define _MAX3421Econstants_h_
 
-/* Arduino pin definitions */
+//#define BLACKWIDOW
+
+/* Arduino pin definitions for USB Host Shield signals. They can be changed here or while calling constructor */
 #define MAX_SS    10
 #define MAX_INT   9
-#define MAX_GPX   3
+//#define MAX_GPX   8
 #define MAX_RESET 7
 
-#define BPNT_0      3
-#define BPNT_1      2
+#ifdef BLACKWIDOW
+#define MAX_SS 6
+#define MAX_INT 3
+#endif
+
+//#define BPNT_0      3
+//#define BPNT_1      2
      
-#define Select_MAX3421E     digitalWrite(MAX_SS,LOW)
-#define Deselect_MAX3421E   digitalWrite(MAX_SS,HIGH)
+//#define Select_MAX3421E     digitalWrite(_ss_pin,LOW)
+//#define Deselect_MAX3421E   digitalWrite(_ss_pin,HIGH)
 
 /* */
 
