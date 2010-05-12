@@ -8,6 +8,8 @@
 
 #include "board_test.h" /* Board test messages */
 
+//#define MAX_SS 10
+
 void setup();
 void loop();
 
@@ -20,6 +22,7 @@ void setup()
   Max.powerOn();
   printProgStr( startBanner );
   printProgStr( anykey_msg );
+  //Serial.print( Max.getvar(), DEC);
 }
 
 void loop()
@@ -240,10 +243,10 @@ void test_halted()
   printProgStr( test_halted_msg );
   printProgStr(PSTR("\r\nPress RESET to restart test"));
   while( 1 )  {            //System Stop. Generating pattern to keep SCLK, MISO, MOSI, SS busy
-    Select_MAX3421E;
+    digitalWrite(MAX_SS,LOW);
     //Max.regRd( rREVISION );
     Spi.transfer( 0x55 ); 
-    Deselect_MAX3421E;
+    digitalWrite(MAX_SS,HIGH);
   }
 }
 /* given a PROGMEM string, use Serial.print() to send it out */
