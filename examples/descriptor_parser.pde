@@ -12,6 +12,7 @@
 #define getReportDescr( addr, ep, nbytes, parse_func, nak_limit ) ctrlXfer( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, parse_func, nak_limit )
 #define getReport( addr, ep, nbytes, interface, report_type, report_id, parse_func, nak_limit ) ctrlXfer( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, parse_func, nak_limit )
 
+
 /* Foeward declarations */ 
 void setup();
 void loop();
