@@ -115,6 +115,7 @@ class USB : public MAX3421E {
         byte setReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
 	      byte getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
         byte getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr, unsigned int nak_limit = USB_NAK_LIMIT );
+        byte setIdle( byte addr, byte ep, byte interface, byte reportID, byte duration, unsigned int nak_limit = USB_NAK_LIMIT );
         /**/
         byte ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction, unsigned int nak_limit = USB_NAK_LIMIT );
         byte ctrlStatus( byte ep, boolean direction, unsigned int nak_limit = USB_NAK_LIMIT );
@@ -163,7 +164,11 @@ inline byte USB::setReport( byte addr, byte ep, unsigned int nbytes, byte interf
 inline byte USB::getReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr, unsigned int nak_limit ) { // ** RI 04/11/09
     return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, dataptr, nak_limit ));
 }
+/* returns one byte of data in dataptr */
 inline byte USB::getIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr, unsigned int nak_limit ) {
         return( ctrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_IDLE, reportID, 0, interface, 0x0001, dataptr, nak_limit ));    
 }
+inline byte USB::setIdle( byte addr, byte ep, byte interface, byte reportID, byte duration, unsigned int nak_limit ) {
+           return( ctrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_IDLE, reportID, duration, interface, 0x0000, NULL, nak_limit ));
+          }
 #endif //_usb_h_
