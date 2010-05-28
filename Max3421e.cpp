@@ -61,22 +61,24 @@ void MAX3421E::toggle( byte pin )
     digitalWrite( pin, LOW );
 }
 /* Single host register write   */
+/* uncomeent all 3 lines with "interrupt" in description to disable/enable interrupts during transfer */
 void MAX3421E::regWr( byte reg, byte val)
 {
-  uint8_t SaveSREG = SREG;       //save interrupt flag
-      cli();                        //disable interrupts
+  // uint8_t SaveSREG = SREG;       //save interrupt flag
+     // cli();                        //disable interrupts
       digitalWrite(_ss_pin,LOW);
       Spi.transfer( reg + 2 ); //set WR bit and send register number
       Spi.transfer( val );
       digitalWrite(_ss_pin,HIGH);
-      SREG = SaveSREG;              //restore interrupt flag 
+      // SREG = SaveSREG;              //restore interrupt flag 
 }
 /* multiple-byte write */
 /* returns a pointer to a memory position after last written */
+/* uncomeent all 3 lines with "interrupt" in description to disable/enable interrupts during transfer */
 char* MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
 {
- uint8_t SaveSREG = SREG;         //save interrupt flag
-  cli();                          //disable interrupts   
+ // uint8_t SaveSREG = SREG;         //save interrupt flag
+  // cli();                          //disable interrupts   
     digitalWrite(_ss_pin,LOW);    //assert SS
     Spi.transfer ( reg + 2 );   //set W/R bit and select register   
     while( nbytes ) {                
@@ -85,7 +87,7 @@ char* MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
         nbytes--;
     }
     digitalWrite(_ss_pin,HIGH);          //deassert SS
-    SREG = SaveSREG;              //restore interrupt flag 
+    // SREG = SaveSREG;              //restore interrupt flag 
     return( data );
 }
 /* GPIO write. GPIO byte is split between 2 registers, so two writes are needed to write one byte */
@@ -100,24 +102,26 @@ void MAX3421E::gpioWr( byte val )
     return;     
 }
 /* Single host register read        */
+/* uncomeent all 3 lines with "interrupt" in description to disable/enable interrupts during transfer */
 byte MAX3421E::regRd( byte reg )    
 {
   byte tmp;
-  uint8_t SaveSREG = SREG;       //save interrupt flag
-    cli();                        //disable interrupts
+  // uint8_t SaveSREG = SREG;       //save interrupt flag
+    // cli();                        //disable interrupts
     digitalWrite(_ss_pin,LOW);
     Spi.transfer ( reg );         //send register number
     tmp = Spi.transfer ( 0x00 );  //send empty byte, read register contents
     digitalWrite(_ss_pin,HIGH);
-    SREG = SaveSREG;              //restore interrupt flag 
+    // SREG = SaveSREG;              //restore interrupt flag 
     return (tmp);
 }
 /* multiple-bytes register read                             */
 /* returns a pointer to a memory position after last read   */
+/* uncomeent all 3 lines with "interrupt" in description to disable/enable interrupts during transfer */
 char * MAX3421E::bytesRd ( byte reg, byte nbytes, char  * data )
 {
-  uint8_t SaveSREG = SREG;       //save interrupt flag
-    cli();                        //disable interrupts
+  // uint8_t SaveSREG = SREG;       //save interrupt flag
+    // cli();                        //disable interrupts
     digitalWrite(_ss_pin,LOW);    //assert SS
     Spi.transfer ( reg );     //send register number
     while( nbytes ) {
@@ -126,7 +130,7 @@ char * MAX3421E::bytesRd ( byte reg, byte nbytes, char  * data )
         nbytes--;
     }
     digitalWrite(_ss_pin,HIGH);  //deassert SS
-    SREG = SaveSREG;              //restore interrupt flag
+    // SREG = SaveSREG;              //restore interrupt flag
     return( data );   
 }
 /* GPIO read. See gpioWr for explanation */
