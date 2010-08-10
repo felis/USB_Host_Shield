@@ -55,6 +55,9 @@ Max_LCD::Max_LCD()
 void Max_LCD::init()
 {
     _displayfunction = LCD_4BITMODE | LCD_1LINE | LCD_5x8DOTS;
+ 
+ //   MAX3421E::gpioWr(0x55);
+ 
   begin(16, 1);  
 }
 
@@ -121,18 +124,18 @@ void Max_LCD::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 void Max_LCD::clear()
 {
   command(LCD_CLEARDISPLAY);  // clear display, set cursor position to zero
-  delayMicroseconds(3000);    // this command takes a long time!
+  delayMicroseconds(2000);  // this command takes a long time!
 }
 
 void Max_LCD::home()
 {
-  command(LCD_RETURNHOME);    // set cursor position to zero
-  delayMicroseconds(3000);    // this command takes a long time!
+  command(LCD_RETURNHOME);  // set cursor position to zero
+  delayMicroseconds(2000);  // this command takes a long time!
 }
 
 void Max_LCD::setCursor(uint8_t col, uint8_t row)
 {
-  uint8_t row_offsets[] = { 0x00, 0x40, 0x14, 0x54 };
+  int row_offsets[] = { 0x00, 0x40, 0x14, 0x54 };
   if ( row > _numlines ) {
     row = _numlines-1;    // we count rows starting w/0
   }

@@ -1,8 +1,8 @@
 //HD44780 compatible LCD display via MAX3421E GPOUT support header
-//pinout: D[4-7] -> GPOUT[4-7], RS-> GPOUT[2], E ->GPOUT[3], no LCD reads therefore R/W shall be grounded
+//pinout: D[4-7] -> GPOUT[4-7], RS-> GPOUT[2], E ->GPOUT[3]
 //
-//this code is borrowing heavily from official Arduino source v.0017
-//link to original http://code.google.com/p/arduino/source/browse/trunk/hardware/libraries/LiquidCrystal/LiquidCrystal.h
+//this code is heavily borrowed from official Arduino source v.0017
+// link to original http://code.google.com/p/arduino/source/browse/trunk/hardware/libraries/LiquidCrystal/LiquidCrystal.h
 //
 #ifndef _Max_LCD_h_
 #define _Max_LCD_h_

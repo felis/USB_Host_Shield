@@ -5,89 +5,63 @@
 
 static byte vbusState;
 
-    uint8_t _ss_pin;     //slave select
-    uint8_t _int_pin;    //interrupt
-    uint8_t _reset_pin;  //reset      
-
 /* Functions    */
 
 /* Constructor */
-MAX3421E::MAX3421E( uint8_t _ss, uint8_t _int, uint8_t _reset )
+MAX3421E::MAX3421E()
 {
-    /* assign pins */
-    _ss_pin = _ss;   
-    _int_pin = _int;
-    _reset_pin = _reset;
-    
-//    Serial.println( _ss_pin, DEC );
-//    Serial.println( _int_pin, DEC );
-//    Serial.println( _reset_pin, DEC );
-    
-    /* setup pins */
-    pinMode( _int_pin, INPUT);
-    pinMode( _ss_pin, OUTPUT );
-    digitalWrite(_ss_pin,HIGH);   //deselect MAX3421E              
-    pinMode( _reset_pin, OUTPUT );
-    digitalWrite( _reset_pin, HIGH );  //release MAX3421E from reset
-    
-    
     //Serial.begin( 9600 );
-    //init();
+    init();
     //powerOn();
 }
 byte MAX3421E::getVbusState( void )
 { 
     return( vbusState );
 }
-byte MAX3421E::getvar( void )
-{
-  return( _int_pin );
-}    
 /* initialization */
 void MAX3421E::init()
 {
     /* setup pins */
-//    pinMode( MAX_INT, INPUT);
-//    pinMode( MAX_SS, OUTPUT );
-//    Deselect_MAX3421E;              
-//    pinMode( MAX_RESET, OUTPUT );
-//    digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
+    pinMode( MAX_INT, INPUT);
+    pinMode( MAX_GPX, INPUT );
+    pinMode( MAX_SS, OUTPUT );
+    pinMode( BPNT_0, OUTPUT );
+    pinMode( BPNT_1, OUTPUT );
+    digitalWrite( BPNT_0, LOW );
+    digitalWrite( BPNT_1, LOW );
+    Deselect_MAX3421E;              
+    pinMode( MAX_RESET, OUTPUT );
+    digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
 }
-
-/* toggles breakpoint pin during debug */
+//byte MAX3421E::getVbusState( void )
+//{
+//    return( vbusState );
+//}
 void MAX3421E::toggle( byte pin )
 {
     digitalWrite( pin, HIGH );
     digitalWrite( pin, LOW );
 }
 /* Single host register write   */
-/* uncomeent all 3 lines with "interrupt" in description to disable/enable interrupts during transfer */
 void MAX3421E::regWr( byte reg, byte val)
 {
-  // uint8_t SaveSREG = SREG;       //save interrupt flag
-     // cli();                        //disable interrupts
-      digitalWrite(_ss_pin,LOW);
+      Select_MAX3421E;
       Spi.transfer( reg + 2 ); //set WR bit and send register number
       Spi.transfer( val );
-      digitalWrite(_ss_pin,HIGH);
-      // SREG = SaveSREG;              //restore interrupt flag 
+      Deselect_MAX3421E;
 }
 /* multiple-byte write */
 /* returns a pointer to a memory position after last written */
-/* uncomeent all 3 lines with "interrupt" in description to disable/enable interrupts during transfer */
-char* MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
+char * MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
 {
- // uint8_t SaveSREG = SREG;         //save interrupt flag
-  // cli();                          //disable interrupts   
-    digitalWrite(_ss_pin,LOW);    //assert SS
+    Select_MAX3421E;            //assert SS
     Spi.transfer ( reg + 2 );   //set W/R bit and select register   
     while( nbytes ) {                
         Spi.transfer( *data );  // send the next data byte
         data++;                 // advance the pointer
         nbytes--;
     }
-    digitalWrite(_ss_pin,HIGH);          //deassert SS
-    // SREG = SaveSREG;              //restore interrupt flag 
+    Deselect_MAX3421E;          //deassert SS
     return( data );
 }
 /* GPIO write. GPIO byte is split between 2 registers, so two writes are needed to write one byte */
@@ -102,35 +76,27 @@ void MAX3421E::gpioWr( byte val )
     return;     
 }
 /* Single host register read        */
-/* uncomeent all 3 lines with "interrupt" in description to disable/enable interrupts during transfer */
 byte MAX3421E::regRd( byte reg )    
 {
   byte tmp;
-  // uint8_t SaveSREG = SREG;       //save interrupt flag
-    // cli();                        //disable interrupts
-    digitalWrite(_ss_pin,LOW);
+    Select_MAX3421E;
     Spi.transfer ( reg );         //send register number
     tmp = Spi.transfer ( 0x00 );  //send empty byte, read register contents
-    digitalWrite(_ss_pin,HIGH);
-    // SREG = SaveSREG;              //restore interrupt flag 
+    Deselect_MAX3421E; 
     return (tmp);
 }
 /* multiple-bytes register read                             */
 /* returns a pointer to a memory position after last read   */
-/* uncomeent all 3 lines with "interrupt" in description to disable/enable interrupts during transfer */
 char * MAX3421E::bytesRd ( byte reg, byte nbytes, char  * data )
 {
-  // uint8_t SaveSREG = SREG;       //save interrupt flag
-    // cli();                        //disable interrupts
-    digitalWrite(_ss_pin,LOW);    //assert SS
+    Select_MAX3421E;    //assert SS
     Spi.transfer ( reg );     //send register number
     while( nbytes ) {
         *data = Spi.transfer ( 0x00 );    //send empty byte, read register contents
         data++;
         nbytes--;
     }
-    digitalWrite(_ss_pin,HIGH);  //deassert SS
-    // SREG = SaveSREG;              //restore interrupt flag
+    Deselect_MAX3421E;  //deassert SS
     return( data );   
 }
 /* GPIO read. See gpioWr for explanation */
@@ -233,27 +199,27 @@ void MAX3421E::powerOn()
 //    }
     /* configure host operation */
     regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ );      // set pull-downs, Host, Separate GPIN IRQ on GPX
-    regWr( rHIEN, bmCONDETIE/*|bmFRAMEIE */);                                             //connection detection
+    regWr( rHIEN, bmCONDETIE|bmFRAMEIE );                                             //connection detection
     regWr(rHCTL,bmSAMPLEBUS);                                               // update the JSTATUS and KSTATUS bits
     busprobe();                                                             //check if anything is connected
     regWr( rHIRQ, bmCONDETIRQ );                                            //clear connection detect interrupt                 
-    //regWr( rHIRQ, 0xff );
-    regWr( rCPUCTL, bmIE );                                                 //enable interrupt pin
+    regWr( rCPUCTL, 0x01 );                                                 //enable interrupt pin
 }
 /* MAX3421 state change task and interrupt handler */
 byte MAX3421E::Task( void )
 {
  byte rcode = 0;
  byte pinvalue;
-
-    pinvalue = digitalRead( _int_pin );    
+    //Serial.print("Vbus state: ");
+    //Serial.println( vbusState, HEX );
+    pinvalue = digitalRead( MAX_INT );    
     if( pinvalue  == LOW ) {
         rcode = IntHandler();
     }
-//    pinvalue = digitalRead( MAX_GPX );
-//    if( pinvalue == LOW ) {
-//        GpxHandler();
-//    }
+    pinvalue = digitalRead( MAX_GPX );
+    if( pinvalue == LOW ) {
+        GpxHandler();
+    }
 //    usbSM();                                //USB state machine                            
     return( rcode );   
 }   

@@ -96,6 +96,7 @@
 
 
 /* descriptor data structures */
+
 /* Device descriptor structure */
 typedef struct {
     byte bLength;               // Length of this descriptor.
@@ -113,6 +114,7 @@ typedef struct {
     byte iSerialNumber;         // Index of String Descriptor with the device's serial number.
     byte bNumConfigurations;    // Number of possible configurations.
 } USB_DEVICE_DESCRIPTOR;
+
 /* Configuration descriptor structure */
 typedef struct
 {
@@ -125,6 +127,7 @@ typedef struct
     byte bmAttributes;          // Configuration characteristics.
     byte bMaxPower;             // Maximum power consumed by this configuration.
 } USB_CONFIGURATION_DESCRIPTOR;
+
 /* Interface descriptor structure */
 typedef struct
 {
@@ -138,6 +141,7 @@ typedef struct
     byte bInterfaceProtocol;    // Protocol code (assigned by the USB-IF).  0xFF-Vendor specific.
     byte iInterface;            // Index of String Descriptor describing the interface.
 } USB_INTERFACE_DESCRIPTOR;
+
 /* Endpoint descriptor structure */
 typedef struct
 {
@@ -148,19 +152,16 @@ typedef struct
     unsigned int wMaxPacketSize;        // Maximum packet size.
     byte bInterval;             // Polling interval in frames.
 } USB_ENDPOINT_DESCRIPTOR;
+
 /* HID descriptor */
 typedef struct {
-  uint8_t bLength;			
-  uint8_t bDescriptorType;	
-  uint16_t bcdHID;			
-  uint8_t bCountryCode;		
-  uint8_t bNumDescriptors;
-  /* at least one descriptor follows, 3 bytes - descritor type, descriptor length */
+    byte bLength;			
+	byte bDescriptorType;	
+	unsigned int bcdHID;			
+    byte bCountryCode;		
+	byte bNumDescriptors;
+	byte bDescrType;			
+    unsigned int wDescriptorLength;
 } USB_HID_DESCRIPTOR;
-/* HID Class descriptor format in HID descriptor */
-typedef struct {
-  uint8_t bDescriptorType;
-  uint16_t wDescriptorLength;
-} HID_CLASS;
 
 #endif // _ch9_h_

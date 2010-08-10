@@ -171,6 +171,10 @@ byte USB::outTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsi
  byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
  unsigned long timeout = millis() + USB_XFER_TIMEOUT;
  
+  if (!maxpktsize) { //todo: move this check close to epinfo init. Make it 1< pktsize <64
+    return 0xFE;
+  }
+ 
   regWr( rHCTL, devtable[ addr ].epinfo[ ep ].sndToggle );    //set toggle value
   while( bytes_left ) {
     retry_count = 0;
