@@ -155,12 +155,12 @@ typedef struct
 
 /* HID descriptor */
 typedef struct {
-    byte bLength;			
-	byte bDescriptorType;	
-	unsigned int bcdHID;			
-    byte bCountryCode;		
-	byte bNumDescriptors;
-	byte bDescrType;			
+    byte bLength;                       
+        byte bDescriptorType;   
+        unsigned int bcdHID;                    
+    byte bCountryCode;          
+        byte bNumDescriptors;
+        byte bDescrType;                        
     unsigned int wDescriptorLength;
 } USB_HID_DESCRIPTOR;
 

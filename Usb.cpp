@@ -322,7 +322,7 @@ void USB::Task( void )      //USB state machine
                 delay = millis() + 20; //20ms wait after reset per USB spec
             }
             break;
-        case USB_ATTACHED_SUBSTATE_WAIT_SOF:
+        case USB_ATTACHED_SUBSTATE_WAIT_SOF:  //todo: change check order
             if( regRd( rHIRQ ) & bmFRAMEIRQ ) {                         //when first SOF received we can continue
               if( delay < millis() ) {                                    //20ms passed
                 usb_task_state = USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE;

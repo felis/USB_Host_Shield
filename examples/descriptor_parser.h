@@ -8,6 +8,7 @@
 typedef void (*PARSE)( uint8_t bytes );
 
 /* Common Messages */
+
 const char descr_len [] PROGMEM = "\r\nDescriptor Length:\t";
 const char descr_type [] PROGMEM = "\r\nDescriptor type:\t";
 const char class_str [] PROGMEM = "\r\nClass:\t\t\t";
@@ -19,6 +20,7 @@ const char reserved_msg [] PROGMEM = "Reserved";
 const char rcode_error_msg [] PROGMEM = "\r\nRequest error. Reurn code: ";
 
 /* Endpoint attributes */
+
 const char control_tr [] PROGMEM = "Control";
 const char iso_tr [] PROGMEM = "Isochronous";
 const char bulk_tr [] PROGMEM = "Bulk";

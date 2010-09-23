@@ -12,12 +12,17 @@
 #define getReportDescr( addr, ep, nbytes, parse_func, nak_limit ) ctrlXfer( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, parse_func, nak_limit )
 #define getReport( addr, ep, nbytes, interface, report_type, report_id, parse_func, nak_limit ) ctrlXfer( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, parse_func, nak_limit )
 
-
 /* Foeward declarations */ 
 void setup();
 void loop();
 byte ctrlXfer( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, uint16_t nbytes, PARSE parse_func, uint16_t nak_limit );
 void HIDreport_parse( uint8_t* buf, uint8_t* head, uint8_t* tail);
+
+typedef struct {
+  uint8_t bDescriptorType;
+  uint16_t wDescriptorLength;
+} HID_CLASS_DESCRIPTOR;
+
 
 //typedef void (*PARSE)( int8_t*, int8_t*, int8_t );
 
@@ -390,7 +395,7 @@ void printhid_descr( char* descr_ptr )
   descr_ptr += 6; //advance buffer pointer
   for( uint8_t i = 0; i < tmpbyte; i++ ) {
     uint8_t tmpdata;
-    HID_CLASS* hidclass_ptr = ( HID_CLASS* )descr_ptr;
+    HID_CLASS_DESCRIPTOR* hidclass_ptr = ( HID_CLASS_DESCRIPTOR* )descr_ptr;
     tmpdata = hidclass_ptr->bDescriptorType;
     printProgStr(PSTR("\r\nClass Descriptor Type:\t"));
     Serial.print( tmpdata, HEX );
