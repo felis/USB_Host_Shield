@@ -318,6 +318,7 @@ void USB::Task( void )      //USB state machine
             if(( regRd( rHCTL ) & bmBUSRST ) == 0 ) {
                 tmpdata = regRd( rMODE ) | bmSOFKAENAB;                 //start SOF generation
                 regWr( rMODE, tmpdata );
+//                  regWr( rMODE, bmSOFKAENAB );
                 usb_task_state = USB_ATTACHED_SUBSTATE_WAIT_SOF;
                 delay = millis() + 20; //20ms wait after reset per USB spec
             }

@@ -3,23 +3,39 @@
 #ifndef _MAX3421Econstants_h_
 #define _MAX3421Econstants_h_
 
-/* Arduino pin definitions */
+/* SPI pins for diffrent Arduinos */
+
+#if defined(__AVR_ATmega1280__) || (__AVR_ATmega2560__)
+  #define SCK_PIN   52
+  #define MISO_PIN  50
+  #define MOSI_PIN  51
+  #define SS_PIN    53
+#endif
+#if  defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__)
+  #define SCK_PIN   13
+  #define MISO_PIN  12
+  #define MOSI_PIN  11
+  #define SS_PIN    10
+#endif
+
 #define MAX_SS    10
 #define MAX_INT   9
 #define MAX_GPX   8
 #define MAX_RESET 7
 
-#define BPNT_0      3
-#define BPNT_1      2
+/* "Breakpoint" pins for debugging */
+//#define BPNT_0      3
+//#define BPNT_1      2
      
-#define Select_MAX3421E     digitalWrite(MAX_SS,LOW)
-#define Deselect_MAX3421E   digitalWrite(MAX_SS,HIGH)
+//#define Select_MAX3421E     digitalWrite(MAX_SS,LOW)
+//#define Deselect_MAX3421E   digitalWrite(MAX_SS,HIGH)
 
 /* */
 
 #define ON  true
 #define OFF false
 
+/* VBUS states */
 #define SE0     0
 #define SE1     1
 #define FSHOST  2

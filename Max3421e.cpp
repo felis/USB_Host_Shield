@@ -10,58 +10,67 @@ static byte vbusState;
 /* Constructor */
 MAX3421E::MAX3421E()
 {
-    //Serial.begin( 9600 );
-    init();
-    //powerOn();
+    spi_init();  
+    pinMode( MAX_INT, INPUT);
+    pinMode( MAX_GPX, INPUT );
+    pinMode( MAX_SS, OUTPUT );
+    digitalWrite(MAX_SS,HIGH);   
+    pinMode( MAX_RESET, OUTPUT );
+    digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
 }
+
 byte MAX3421E::getVbusState( void )
 { 
     return( vbusState );
 }
 /* initialization */
-void MAX3421E::init()
-{
-    /* setup pins */
-    pinMode( MAX_INT, INPUT);
-    pinMode( MAX_GPX, INPUT );
-    pinMode( MAX_SS, OUTPUT );
-    pinMode( BPNT_0, OUTPUT );
-    pinMode( BPNT_1, OUTPUT );
-    digitalWrite( BPNT_0, LOW );
-    digitalWrite( BPNT_1, LOW );
-    Deselect_MAX3421E;              
-    pinMode( MAX_RESET, OUTPUT );
-    digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
-}
+//void MAX3421E::init()
+//{
+//    /* setup pins */
+//    pinMode( MAX_INT, INPUT);
+//    pinMode( MAX_GPX, INPUT );
+//    pinMode( MAX_SS, OUTPUT );
+//    //pinMode( BPNT_0, OUTPUT );
+//    //pinMode( BPNT_1, OUTPUT );
+//    //digitalWrite( BPNT_0, LOW );
+//    //digitalWrite( BPNT_1, LOW );
+//    Deselect_MAX3421E;              
+//    pinMode( MAX_RESET, OUTPUT );
+//    digitalWrite( MAX_RESET, HIGH );  //release MAX3421E from reset
+//}
 //byte MAX3421E::getVbusState( void )
 //{
 //    return( vbusState );
 //}
-void MAX3421E::toggle( byte pin )
-{
-    digitalWrite( pin, HIGH );
-    digitalWrite( pin, LOW );
-}
+//void MAX3421E::toggle( byte pin )
+//{
+//    digitalWrite( pin, HIGH );
+//    digitalWrite( pin, LOW );
+//}
 /* Single host register write   */
 void MAX3421E::regWr( byte reg, byte val)
 {
-      Select_MAX3421E;
-      Spi.transfer( reg + 2 ); //set WR bit and send register number
-      Spi.transfer( val );
-      Deselect_MAX3421E;
+      digitalWrite(MAX_SS,LOW);
+      SPDR = ( reg | 0x02 );
+      while(!( SPSR & ( 1 << SPIF )));
+      SPDR = val;
+      while(!( SPSR & ( 1 << SPIF )));
+      digitalWrite(MAX_SS,HIGH);
+      return;
 }
 /* multiple-byte write */
 /* returns a pointer to a memory position after last written */
 char * MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
 {
-    Select_MAX3421E;            //assert SS
-    Spi.transfer ( reg + 2 );   //set W/R bit and select register   
-    while( nbytes ) {                
-        Spi.transfer( *data );  // send the next data byte
-        data++;                 // advance the pointer
-        nbytes--;
+    digitalWrite(MAX_SS,LOW);
+    SPDR = ( reg | 0x02 );
+    while( nbytes-- ) {
+      while(!( SPSR & ( 1 << SPIF )));  //check if previous byte was sent
+      SPDR = ( *data );               // send next data byte
+      data++;                         // advance data pointer
     }
-    Deselect_MAX3421E;          //deassert SS
+    while(!( SPSR & ( 1 << SPIF )));
+    digitalWrite(MAX_SS,HIGH);
     return( data );
 }
 /* GPIO write. GPIO byte is split between 2 registers, so two writes are needed to write one byte */
@@ -79,24 +88,29 @@ void MAX3421E::gpioWr( byte val )
 byte MAX3421E::regRd( byte reg )    
 {
   byte tmp;
-    Select_MAX3421E;
-    Spi.transfer ( reg );         //send register number
-    tmp = Spi.transfer ( 0x00 );  //send empty byte, read register contents
-    Deselect_MAX3421E; 
-    return (tmp);
+    digitalWrite(MAX_SS,LOW);
+    SPDR = reg;
+    while(!( SPSR & ( 1 << SPIF )));
+    SPDR = 0; //send empty byte
+    while(!( SPSR & ( 1 << SPIF )));
+    digitalWrite(MAX_SS,HIGH); 
+    return( SPDR );
 }
 /* multiple-bytes register read                             */
 /* returns a pointer to a memory position after last read   */
 char * MAX3421E::bytesRd ( byte reg, byte nbytes, char  * data )
 {
-    Select_MAX3421E;    //assert SS
-    Spi.transfer ( reg );     //send register number
+    digitalWrite(MAX_SS,LOW);
+    SPDR = reg;      
+    while(!( SPSR & ( 1 << SPIF )));    //wait
     while( nbytes ) {
-        *data = Spi.transfer ( 0x00 );    //send empty byte, read register contents
-        data++;
-        nbytes--;
+      SPDR = 0; //send empty byte
+      nbytes--;
+      while(!( SPSR & ( 1 << SPIF )));
+      *data = SPDR;
+      data++;
     }
-    Deselect_MAX3421E;  //deassert SS
+    digitalWrite(MAX_SS,HIGH);
     return( data );   
 }
 /* GPIO read. See gpioWr for explanation */
@@ -148,7 +162,7 @@ boolean MAX3421E::vbusPwr ( boolean action )
 //    }                      
     return( true );                                             // power on/off successful                       
 }
-/* probe bus to determine device presense and speed */
+/* probe bus to determine device presense and speed and switch host to this speed */
 void MAX3421E::busprobe( void )
 {
  byte bus_sample;
@@ -191,16 +205,13 @@ void MAX3421E::powerOn()
     if( reset() == false ) {                                //stop/start the oscillator
         Serial.println("Error: OSCOKIRQ failed to assert");
     }
-//    /* configure power switch   */
-//    vbusPwr( OFF );                                         //turn Vbus power off
-//    regWr( rGPINIEN, bmGPINIEN7 );                          //enable interrupt on GPIN7 (power switch overload flag)
-//    if( vbusPwr( ON  ) == false ) {
-//        Serial.println("Error: Vbus overload");
-//    }
+
     /* configure host operation */
     regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ );      // set pull-downs, Host, Separate GPIN IRQ on GPX
     regWr( rHIEN, bmCONDETIE|bmFRAMEIE );                                             //connection detection
-    regWr(rHCTL,bmSAMPLEBUS);                                               // update the JSTATUS and KSTATUS bits
+    /* check if device is connected */
+    regWr( rHCTL,bmSAMPLEBUS );                                             // sample USB bus
+    while(!(regRd( rHCTL ) & bmSAMPLEBUS ));                                //wait for sample operation to finish
     busprobe();                                                             //check if anything is connected
     regWr( rHIRQ, bmCONDETIRQ );                                            //clear connection detect interrupt                 
     regWr( rCPUCTL, 0x01 );                                                 //enable interrupt pin
@@ -228,9 +239,9 @@ byte MAX3421E::IntHandler()
  byte HIRQ;
  byte HIRQ_sendback = 0x00;
     HIRQ = regRd( rHIRQ );                  //determine interrupt source
-    if( HIRQ & bmFRAMEIRQ ) {               //->1ms SOF interrupt handler
-        HIRQ_sendback |= bmFRAMEIRQ;
-    }//end FRAMEIRQ handling
+    //if( HIRQ & bmFRAMEIRQ ) {               //->1ms SOF interrupt handler
+    //    HIRQ_sendback |= bmFRAMEIRQ;
+    //}//end FRAMEIRQ handling
     if( HIRQ & bmCONDETIRQ ) {
         busprobe();
         HIRQ_sendback |= bmCONDETIRQ;
