@@ -11,7 +11,7 @@ const char startBanner  [] PROGMEM = "\r\nCircuits At Home 2010"
                                       "\r\nUSB Host Shield QC test routine\r\n";
 const char anykey_msg [] PROGMEM =  "\r\nPress any key to continue...";
 const char testpassed_msg [] PROGMEM = "\r\nTest PASSED";
-const char testfailed_msg [] PROGMEM = "\r\nTest FAILED!!!";
+const char testfailed_msg [] PROGMEM = "\r\nTest FAILED*!*";
 const char osctest_oscstate_msg [] PROGMEM = " Oscillator state is ";
 const char test_halted_msg [] PROGMEM = "\r\nTest Halted."
                                         "\r\n0x55 pattern is being transmitted via SPI to aid in troubleshooting";

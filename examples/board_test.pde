@@ -1,7 +1,7 @@
 /* USB Host Shield Board test routine. Runs after assembly to check board functionality */
 
 /* USB related */
-#include <Spi.h>
+//#include <Spi.h>
 #include <Max3421e.h>
 #include <Max3421e_constants.h>
 #include <Usb.h>
@@ -19,6 +19,8 @@ USB Usb;
 void setup()
 {
   Serial.begin( 115200 );
+  //Serial.println("Start");
+  //Serial.println( SCK_PIN, DEC );
   Max.powerOn();
   printProgStr( startBanner );
   printProgStr( anykey_msg );
@@ -148,14 +150,17 @@ bool usbtest()
           break;
         case( USB_ATTACHED_SUBSTATE_WAIT_SOF ): 
           printProgStr(PSTR("\r\nReset complete. Waiting for the first SOF..."));
+          //delay( 1000 );
           break;  
         case( USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE ):
           printProgStr(PSTR("\r\nSOF generation started. Enumerating device."));
           break;
         case( USB_STATE_ADDRESSING ):
           printProgStr(PSTR("\r\nSetting device address"));
+          //delay( 100 );
           break;
         case( USB_STATE_CONFIGURING ):
+          //delay( 1000 );
           printProgStr(PSTR("\r\nGetting device descriptor"));
           rcode = getdevdescr( 1 );
             if( rcode ) {
@@ -245,7 +250,7 @@ void test_halted()
   while( 1 )  {            //System Stop. Generating pattern to keep SCLK, MISO, MOSI, SS busy
     digitalWrite(MAX_SS,LOW);
     //Max.regRd( rREVISION );
-    Spi.transfer( 0x55 ); 
+//    Spi.transfer( 0x55 ); 
     digitalWrite(MAX_SS,HIGH);
   }
 }
