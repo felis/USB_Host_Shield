@@ -249,7 +249,7 @@ void test_halted()
   printProgStr(PSTR("\r\nPress RESET to restart test"));
   while( 1 )  {            //System Stop. Generating pattern to keep SCLK, MISO, MOSI, SS busy
     digitalWrite(MAX_SS,LOW);
-    //Max.regRd( rREVISION );
+    Max.regWr( 0x55, 0x55 );
 //    Spi.transfer( 0x55 ); 
     digitalWrite(MAX_SS,HIGH);
   }
