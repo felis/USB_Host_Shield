@@ -5,7 +5,7 @@
 static byte usb_error = 0;
 static byte usb_task_state;
 DEV_RECORD devtable[ USB_NUMDEVICES + 1 ];
-EP_RECORD dev0ep;         //Endpoint data structure used during enumeration for uninitialized device
+EP_RECORD dev0ep;           //Endpoint data structure used during enumeration for uninitialized device
 
 
 /* constructor */
