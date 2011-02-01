@@ -1,3 +1,4 @@
+/* Copyright 2009 Oleg Mazurov */
 /* USB functions */
 #ifndef _usb_h_
 #define _usb_h_

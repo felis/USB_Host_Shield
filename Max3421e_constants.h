@@ -1,3 +1,4 @@
+/* Copyright 2009 Oleg Mazurov */
 /* MAX3421E register/bit names and bitmasks */
 
 #ifndef _MAX3421Econstants_h_

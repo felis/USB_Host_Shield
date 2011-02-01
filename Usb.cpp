@@ -1,3 +1,4 @@
+/* Copyright 2009 Oleg Mazurov */
 /* USB functions */
 
 #include "Usb.h"

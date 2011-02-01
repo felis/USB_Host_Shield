@@ -1,3 +1,4 @@
+/* Copyright 2009 Oleg Mazurov */
 /* USB chapter 9 structures */
 #ifndef _ch9_h_
 #define _ch9_h_

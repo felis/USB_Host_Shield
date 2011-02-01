@@ -1,3 +1,4 @@
+/* Copyright 2009 Oleg Mazurov */
 /* MAX3421E functions */
 #ifndef _MAX3421E_H_
 #define _MAX3421E_H_

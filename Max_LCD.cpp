@@ -1,3 +1,4 @@
+/* LCD Functions */
 #include "Max_LCD.h"
 #include "Max3421e.h"
 

@@ -1,3 +1,4 @@
+/* Copyright 2009 Oleg Mazurov */
 /* MAX3421E USB host controller support */
 
 #include "Max3421e.h"
