@@ -1,5 +1,4 @@
-This is a library for MAX3421E-based USB Host Shield for Arduino. This is a fork from http://github.com/felis/ArduinoUSBhost repo. 
-Vbus power management has been removed. Old sketches should work, if they are not, please let me know mazurov@circuitsathome.com
+This is a library for MAX3421E-based USB Host Shield for Arduino -> http://www.circuitsathome.com/arduino_usb_host_shield_projects
 
 More information can be found at http://www.circuitsathome.com
 
