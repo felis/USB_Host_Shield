@@ -1,4 +1,4 @@
-/* Copyright 2009 Oleg Mazurov */
+/* Copyright 2009-2011 Oleg Mazurov, Circuits At Home, http://www.circuitsathome.com */
 /* MAX3421E functions */
 #ifndef _MAX3421E_H_
 #define _MAX3421E_H_

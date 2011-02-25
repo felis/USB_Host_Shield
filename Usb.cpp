@@ -1,4 +1,4 @@
-/* Copyright 2009 Oleg Mazurov */
+/* Copyright 2009-2011 Oleg Mazurov, Circuits At Home, http://www.circuitsathome.com */
 /* USB functions */
 
 #include "Usb.h"

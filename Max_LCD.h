@@ -1,3 +1,4 @@
+/* Copyright 2009-2011 Oleg Mazurov, Circuits At Home, http://www.circuitsathome.com */
 //HD44780 compatible LCD display via MAX3421E GPOUT support header
 //pinout: D[4-7] -> GPOUT[4-7], RS-> GPOUT[2], E ->GPOUT[3]
 //

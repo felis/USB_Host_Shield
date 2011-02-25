@@ -1,4 +1,6 @@
-/* LCD Functions */
+/* Copyright 2009-2011 Oleg Mazurov, Circuits At Home, http://www.circuitsathome.com */
+//this code is heavily borrowed from official Arduino source v.0017
+// link to original http://code.google.com/p/arduino/source/browse/trunk/hardware/libraries/LiquidCrystal/LiquidCrystal.cpp
 #include "Max_LCD.h"
 #include "Max3421e.h"
 
@@ -23,7 +25,7 @@
 //    S = 0; No shift
 //
 // Note, however, that resetting the Arduino doesn't reset the LCD, so we
-// can't assume that its in that state when a sketch starts
+// can't assume that it's in that state when a sketch starts
 
 // pin definition and set/clear
 
