@@ -275,7 +275,13 @@ void USB::Task( void )      //USB state machine
   byte tmpdata;
   static unsigned long delay = 0;
   USB_DEVICE_DESCRIPTOR buf;
+  /**/
     tmpdata = getVbusState();
+//    Serial.print("vbusState: ");
+//    Serial.print(tmpdata, HEX);
+//
+//    Serial.print("\n");
+    /**/
     /* modify USB task state if Vbus changed */
 
     switch( tmpdata ) {
