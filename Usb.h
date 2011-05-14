@@ -121,6 +121,7 @@ class USB : public MAX3421E {
         byte ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction, unsigned int nak_limit = USB_NAK_LIMIT );
         byte ctrlStatus( byte ep, boolean direction, unsigned int nak_limit = USB_NAK_LIMIT );
         byte inTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsigned int nak_limit = USB_NAK_LIMIT );
+        int newInTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsigned int nak_limit  = USB_NAK_LIMIT);
         byte outTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsigned int nak_limit = USB_NAK_LIMIT );
         byte dispatchPkt( byte token, byte ep, unsigned int nak_limit = USB_NAK_LIMIT );
         void Task( void );

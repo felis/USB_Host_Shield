@@ -159,6 +159,44 @@ byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsig
         }
   }//while( 1 )
 }
+
+/* Google variant of inTransfer. Pasted verbatim from ADK. Returns length instead of error code. Provided for compatibility with Google Open Accessory code */
+int USB::newInTransfer( byte addr, byte ep, unsigned int nbytes, char* data, unsigned int nak_limit )
+{
+ byte rcode;
+ byte pktsize;
+ byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
+ unsigned int xfrlen = 0;
+    regWr( rHCTL, devtable[ addr ].epinfo[ ep ].rcvToggle );    //set toggle value
+    while( 1 ) { // use a 'return' to exit this loop
+        rcode = dispatchPkt( tokIN, ep, nak_limit );           //IN packet to EP-'endpoint'. Function takes care of NAKS.
+        if( rcode ) {
+		return -1;                            //should be 0, indicating ACK. Else return error code.
+        }
+        /* check for RCVDAVIRQ and generate error if not present */ 
+        /* the only case when absense of RCVDAVIRQ makes sense is when toggle error occured. Need to add handling for that */
+        if(( regRd( rHIRQ ) & bmRCVDAVIRQ ) == 0 ) {
+            return -1;                            //receive error
+        }
+        pktsize = regRd( rRCVBC );                      //number of received bytes
+        data = bytesRd( rRCVFIFO, pktsize, data );
+        regWr( rHIRQ, bmRCVDAVIRQ );                    // Clear the IRQ & free the buffer
+        xfrlen += pktsize;                              // add this packet's byte count to total transfer length
+        /* The transfer is complete under two conditions:           */
+        /* 1. The device sent a short packet (L.T. maxPacketSize)   */
+        /* 2. 'nbytes' have been transferred.                       */
+        if (( pktsize < maxpktsize ) || (xfrlen >= nbytes )) {      // have we transferred 'nbytes' bytes?
+            if( regRd( rHRSL ) & bmRCVTOGRD ) {                     //save toggle value
+                devtable[ addr ].epinfo[ ep ].rcvToggle = bmRCVTOG1;
+            }
+            else {
+                devtable[ addr ].epinfo[ ep ].rcvToggle = bmRCVTOG0;
+            }
+            return xfrlen;
+        }
+  }//while( 1 )
+}
+
 /* OUT transfer to arbitrary endpoint. Assumes PERADDR is set. Handles multiple packets if necessary. Transfers 'nbytes' bytes. */
 /* Handles NAK bug per Maxim Application Note 4000 for single buffer transfer   */
 /* rcode 0 if no errors. rcode 01-0f is relayed from HRSL                       */
