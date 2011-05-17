@@ -194,6 +194,7 @@ void MAX3421E::busprobe( void )
             vbusState = SE1;
             break;
         case( bmSE0 ):              //disconnected state
+            regWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ);
             vbusState = SE0;
             break;
         }//end switch( bus_sample )
