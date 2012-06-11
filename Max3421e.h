@@ -3,10 +3,12 @@
 #ifndef _MAX3421E_H_
 #define _MAX3421E_H_
 
-
-//#include <Spi.h>
-//#include <WProgram.h>
-#include "WProgram.h"
+// Arduino 1.0 compatibility
+#if defined(ARDUINO) && ARDUINO >= 100
+    #include <Arduino.h>
+#else
+    #include <WProgram.h>
+#endif
 #include "Max3421e_constants.h"
 
 class MAX3421E /* : public SPI */ {

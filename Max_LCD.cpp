@@ -7,7 +7,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
-#include "WProgram.h"
+// Arduino 1.0 compatibility
+#if defined(ARDUINO) && ARDUINO >= 100
+    #include <Arduino.h>
+#else
+    #include <WProgram.h>
+#endif
 
 // When the display powers up, it is configured as follows:
 //
@@ -226,7 +231,12 @@ inline void Max_LCD::command(uint8_t value) {
   delayMicroseconds(100);
 }
 
+// Arduino 1.0 compatibility
+#if defined(ARDUINO) && ARDUINO >= 100
+inline size_t Max_LCD::write(uint8_t value) {
+#else
 inline void Max_LCD::write(uint8_t value) {
+#endif
   LCD_sendchar(value);
 }
 
