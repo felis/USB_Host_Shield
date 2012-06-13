@@ -70,7 +70,12 @@ public:
   void noAutoscroll();
   void createChar(uint8_t, uint8_t[]);
   void setCursor(uint8_t, uint8_t); 
+// Arduino 1.0 compatibility
+#if defined(ARDUINO) && ARDUINO >= 100
+  virtual size_t write(uint8_t);
+#else
   virtual void write(uint8_t);
+#endif
   void command(uint8_t);
 private:
   void sendbyte( uint8_t val );
