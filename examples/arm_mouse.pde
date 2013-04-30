@@ -5,10 +5,10 @@
 #include <Usb.h>
  
 #define DEVADDR 1
-#define CONFVALUE 1
+#define CONFVALUE 2
 
 
-
+ghgh
 
 /* Arm dimensions( mm ) */
 #define BASE_HGT 67.31      //base hight 2.65"
